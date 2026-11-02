@@ -47,16 +47,22 @@ const StoreAI = (() => {
   const PRICE_SCHEMA = {
     type: "object",
     properties: {
-      action: { type: "string", enum: ["discount_percent", "discount_fixed", "increase_percent", "increase_fixed", "reset_discount", "unclear"] },
-      value: { type: "number" }, category: NULLABLE_STR, minPrice: NULLABLE_NUM, maxPrice: NULLABLE_NUM, summary: STR
+      action: { type: "string", enum: ["discount_percent", "discount_fixed", "increase_percent", "increase_fixed", "reset_discount", "set_price", "unclear"] },
+      value: { type: "number" },
+      targetType: { type: "string", enum: ["category", "barcode", "product", "all"] },
+      targetValue: NULLABLE_STR,
+      category: NULLABLE_STR,
+      minPrice: NULLABLE_NUM,
+      maxPrice: NULLABLE_NUM,
+      summary: STR
     },
-    required: ["action", "value", "category", "minPrice", "maxPrice", "summary"],
+    required: ["action", "value", "targetType", "targetValue", "category", "minPrice", "maxPrice", "summary"],
     additionalProperties: false
   };
 
   // الأقسام قد تأتي أسماء (نص) أو كائنات {name, path}؛ المسار «الأب › الفرعي» يميّز قسمين بنفس الاسم تحت أبوين مختلفين
   const catLabel = c => cleanText(typeof c === "string" ? c : (c && (c.path || c.name)), 120);
-  const PRICE_ACTIONS = ["discount_percent", "discount_fixed", "increase_percent", "increase_fixed", "reset_discount"];
+  const PRICE_ACTIONS = ["discount_percent", "discount_fixed", "increase_percent", "increase_fixed", "reset_discount", "set_price"];
 
   /* ------------------------------ أدوات التنظيف ------------------------------ */
   const AR_DIGITS = { "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4", "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9",
@@ -106,8 +112,6 @@ const StoreAI = (() => {
 
   /* ------------------------------ تنظيف المنتجات المستخرجة ------------------------------ */
   /* ---- ألوان بصيغة كود (HEX) ---- */
-  // ملفات المبيعات تكتب الدرجة ككود (E07A5F). نحوّله **حسابياً** إلى اسم عربي لأقرب لون معروف (أدق وأثبت من تخمين نموذج لغوي)،
-  // ونحتفظ بالكود نفسه ليُستعمل كدرجة فعلية للون (بدل الأزرق الافتراضي).
   const COLOR_NAMES = [
     ["أسود", "#111111"], ["أبيض", "#FFFFFF"], ["رمادي", "#808080"], ["رمادي فاتح", "#C8C8C8"], ["رمادي غامق", "#4A4A4A"], ["فضي", "#C0C0C0"],
     ["أحمر", "#E53935"], ["أحمر غامق", "#B71C1C"], ["عنابي", "#7B1E3A"], ["ماروني", "#800000"],
@@ -119,13 +123,11 @@ const StoreAI = (() => {
     ["أخضر", "#43A047"], ["أخضر فاتح", "#9CCC65"], ["أخضر غامق", "#1B5E20"], ["ليموني", "#CDDC39"], ["زيتي", "#6B8E23"], ["نعناعي", "#98E0C4"], ["تركوازي", "#26C6DA"],
     ["سماوي", "#4FC3F7"], ["أزرق", "#1E88E5"], ["أزرق فاتح", "#90CAF9"], ["كحلي", "#1A237E"],
     ["بنفسجي", "#8E24AA"], ["أرجواني", "#6A1B9A"], ["لافندر", "#B39DDB"], ["موف", "#AB7FD0"],
-    // مراسي إضافية للألوان الصريحة الشائعة (الاسم نفسه بدرجات أنقى/أغمق) كي لا تُسمّى الدرجة النقية باسم درجتها الغامقة
     ["أحمر", "#FF0000"], ["أحمر", "#D32F2F"], ["أخضر", "#2E7D32"], ["أخضر", "#00A651"], ["أخضر", "#00C000"], ["أزرق", "#0000FF"], ["أزرق", "#1565C0"],
     ["أصفر", "#FFEB3B"], ["أصفر", "#FFFF00"], ["ذهبي", "#FFD700"], ["سماوي", "#87CEEB"], ["سماوي", "#00BFFF"], ["بني غامق", "#6D4C41"],
     ["برتقالي", "#FFA500"], ["برتقالي", "#FF6D00"], ["وردي", "#FF69B4"], ["بنفسجي", "#800080"], ["رمادي غامق", "#333333"]
   ].map(c => ({ name: c[0], hex: c[1], rgb: [1, 3, 5].map(i => parseInt(c[1].substr(i, 2), 16)) }));
 
-  // يقبل: E07A5F | #E07A5F | 0xE07A5F | #E75 | rgb(224,122,95). الستة بلا # لا تُعدّ كوداً إلا إن حوت رقماً (حتى لا تُفهم كلمة مثل facade كلون).
   function parseHexColor(v) {
     const t = cleanText(v, 30).replace(/^0x/i, "#");
     let m = t.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i);
@@ -149,13 +151,12 @@ const StoreAI = (() => {
     let best = null, bestD = Infinity;
     COLOR_NAMES.forEach(c => {
       const rm = (rgb[0] + c.rgb[0]) / 2, dr = rgb[0] - c.rgb[0], dg = rgb[1] - c.rgb[1], db = rgb[2] - c.rgb[2];
-      const d = (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db;     // مسافة redmean (أقرب لإدراك العين من RGB الخام)
+      const d = (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db;
       if (d < bestD) { bestD = d; best = c; }
     });
     return best ? best.name : "";
   }
 
-  // مدخل لون من ملف: «E07A5F» أو «#E07A5F - تيراكوتا» أو «تيراكوتا». يرجع {name, hex} لو فيه كود، وإلا null.
   function splitColorEntry(v) {
     const t = cleanText(v, 60);
     if (!t) return null;
@@ -169,9 +170,7 @@ const StoreAI = (() => {
     return { name: /\p{L}/u.test(rest) ? rest : hexToColorName(hex), hex };
   }
 
-  /* ---- لون من الاسم (إنجليزي/عربي/تسويقي) ---- */
-  // أسماء الألوان التسويقية للهواتف والأجهزة (Obsidian، Porcelain، Titanium…) لا يعرفها أي قاموس عربي، فكانت كلها تأخذ الأزرق الافتراضي.
-  // الترتيب عند القرار النهائي (resolveColorHex): كود صريح ← درجة النموذج (إن لم تناقض الاسم) ← القاموس ← فارغ (رمادي محايد في الأدمن، لا أزرق).
+  /* ---- لون من الاسم ---- */
   const COLOR_WORDS_BASE = {
     black: "#1C1C1E", "اسود": "#1C1C1E", white: "#F5F5F0", "ابيض": "#F5F5F0", gray: "#8E8E93", grey: "#8E8E93", "رمادي": "#8E8E93", "رصاصي": "#8E8E93",
     silver: "#C0C0C5", "فضي": "#C0C0C5", "سيلفر": "#C0C0C5", gold: "#D4AF37", "ذهبي": "#D4AF37", red: "#D32F2F", "احمر": "#D32F2F", "عنابي": "#7B1E3A",
@@ -196,12 +195,11 @@ const StoreAI = (() => {
   function hexRgb(h) { return [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16)); }
   function rgbHex(a) { return "#" + a.map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, "0")).join("").toUpperCase(); }
   function mixHex(h, target, k) { const a = hexRgb(h), b = hexRgb(target); return rgbHex(a.map((x, i) => x + (b[i] - x) * k)); }
-  function colorDistance(h1, h2) {     // redmean
+  function colorDistance(h1, h2) {
     const a = hexRgb(h1), b = hexRgb(h2), rm = (a[0] + b[0]) / 2;
     return Math.sqrt((2 + rm / 256) * (a[0] - b[0]) ** 2 + 4 * (a[1] - b[1]) ** 2 + (2 + (255 - rm) / 256) * (a[2] - b[2]) ** 2);
   }
 
-  // اسم لون (Titanium Gray / Moonlight White / أزرق فاتح) ← درجة، أو "" إن لم يُعرف. اللون الأساسي (gray) يغلب الكلمة التسويقية (titanium).
   function colorHexFromName(name) {
     const words = normKey(name).split(" ").filter(Boolean);
     if (!words.length) return "";
@@ -214,14 +212,12 @@ const StoreAI = (() => {
     return hex;
   }
 
-  // القرار النهائي لدرجة لون بلا كود صريح: درجة النموذج إن كانت صالحة ولا تناقض الاسم، وإلا القاموس، وإلا "" (لا أزرق افتراضي).
   function resolveColorHex(name, aiHex) {
     const dict = colorHexFromName(name), ai = parseHexColor(aiHex);
     if (dict && ai) return colorDistance(dict, ai) <= 260 ? ai : dict;
     return dict || ai || "";
   }
 
-  // يحوّل مصفوفة ألوان خام (نصوص أو {name,hex} أو نص واحد بفواصل) إلى { names[], hexMap{} } بعد التنقية.
   function buildColors(rawColors) {
     const flat = [];
     (Array.isArray(rawColors) ? rawColors : [rawColors]).forEach(c => {
@@ -247,9 +243,7 @@ const StoreAI = (() => {
     return { names, hexMap };
   }
 
-  /* ---- السعة التخزينية (رام/تخزين): 12/256 ← 12GB + 256GB ---- */
-  // ملفات الهواتف تكتب السعة «12/256» أو «16/1024»؛ كانت تُرفض لأنها ليست رقماً+وحدة فتضيع. نحوّلها حسابياً (لا بنموذج لغوي).
-  // لا نستعمل «/» في الناتج لأنها محظورة في مفاتيح Firebase (مفتاح المخزون «لون||مقاس»).
+  /* ---- السعة والمقاسات ---- */
   const CAP_STORAGE = new Set([32, 64, 128, 256, 512, 1024, 2048, 4096]);
   const CAP_RAM = new Set([1, 2, 3, 4, 6, 8, 10, 12, 16, 18, 24, 32, 64]);
   const CAP_RE = /^(\d{1,2})\s*(?:gb|g|جيجا)?\s*(?:ram|رام)?\s*[\/+\-–|]\s*(\d{1,4})\s*(tb|gb|g|تيرا|ترا|جيجا)?\s*(?:rom|ssd|storage|تخزين)?$/i;
@@ -269,31 +263,27 @@ const StoreAI = (() => {
     if (cap) return cap.label;
     const t = toAsciiDigits(cleanText(v, 40));
     const j = t.match(/^(2[4-9]|[3-5]\d)\s*[\/x×]\s*(2[8-9]|3[0-8])$/i);
-    return j ? j[1] + "×" + j[2] : cleanText(v, 40);   // «/» تُقسِّم المقاسات عند الحفظ فنستعمل ×
+    return j ? j[1] + "×" + j[2] : cleanText(v, 40);
   }
 
-  // المقاس/السعة الحقيقية فقط: رقم+وحدة (50ml، 30 مل، 256GB، 5 kg)، مقاسات ملابس (S..5XL)، أرقام أحذية (4–60)، «مقاس واحد».
-  // النسب المئوية وتراكيز المكوّنات (10%، 1%) ليست مقاساً — كانت تظهر خطأً («10% + 1%» في خانة المقاسات).
   const UNIT = "(?:ml|mL|ملل|مل|l|لتر|ltr|g|gr|gm|غرام|جرام|غم|جم|غ|kg|كغم|كغ|كيلو|oz|fl\\.?\\s?oz|cm|سم|mm|ملم|m|متر|inch|in|بوصة|انش|gb|tb|mb|جيجا|تيرا|mah|w|وات|v|فولت|pcs|pc|قطعة|قطع|حبة|حبات|capsules?|كبسولة|كبسولات|tablets?|قرص|اقراص|أقراص|sheets?|ورقة|pack|عبوة|btu|بي تي يو|طن|حصان|hp|hz|ghz|rpm|قدم|ft|\")";
   const SIZE_ONE = new RegExp("^(?:\\d+(?:[.,]\\d+)?\\s*" + UNIT + "|(?:xxs|xs|s|m|l|xl|xxl|xxxl|[2-6]xl|free\\s?size|one\\s?size|مقاس واحد|فري سايز)|(?:[4-9]|[1-5]\\d|60)(?:\\.5)?)$", "i");
-  // مقاسات الأطفال بالعمر (2-3Y، 6M، 12 شهر) ومقاس الجينز (30/32): كانت تُحذف بصمت لأنها ليست «رقم+وحدة».
   const AGE_SIZE = /^\d{1,2}(?:\s*[-–]\s*\d{1,2})?\s*(?:y|yr|yrs|year|years|m|mo|mos|month|months|سنه|سنة|سنوات|سنين|شهر|اشهر|أشهر)$/i;
   const JEANS_SIZE = /^(2[4-9]|[3-5]\d)\s*[\/x×]\s*(2[8-9]|3[0-8])$/i;
   function isValidSize(v) {
     const t = cleanText(v, 40);
     if (!t || t.includes("%")) return false;
     if (SIZE_ONE.test(t) || parseCapacity(t) || AGE_SIZE.test(t) || JEANS_SIZE.test(t)) return true;
-    const m = t.match(/^(\d+)\s*[x×*]\s*(.+)$/i) || t.match(/^(.+?)\s*[x×*]\s*(\d+)$/i);   // «2×50ml» أو «50ml x 2»
+    const m = t.match(/^(\d+)\s*[x×*]\s*(.+)$/i) || t.match(/^(.+?)\s*[x×*]\s*(\d+)$/i);
     return !!(m && (SIZE_ONE.test(m[2].trim()) || SIZE_ONE.test(m[1].trim())));
   }
   function isValidColor(v) {
     const t = cleanText(v, 40);
     if (!t || t.includes("%") || /\d{3,}/.test(t)) return false;
-    if (SIZE_ONE.test(t)) return false;                      // «50ml» ليس لوناً
+    if (SIZE_ONE.test(t)) return false;
     return !/^(شفاف|شفافة|شفافه|مائي|مائية|مائيه|عديم اللون|عديمة اللون|clear|transparent|جل|جيل|سائل)$/i.test(t);
   }
 
-  // قائمة مقاسات منظَّفة: لا نقسم النص على «/» (12/256 سعة وليست خيارين)، ونوحّد السعات ثم نتحقق ونزيل التكرار.
   function toSizeList(v) {
     const arr = Array.isArray(v) ? v : (typeof v === "string" ? v.split(/[,،|]/) : []);
     const out = [], seen = new Set();
@@ -304,12 +294,11 @@ const StoreAI = (() => {
     return out.slice(0, 20);
   }
 
-  // هل «الوصف» مجرد تكرار لاسم المنتج؟ (كان النموذج يضع اسم المنتج في خانة الوصف). قصير + يشارك الاسم كلمتين مميّزتين فأكثر.
   function nameTokens(str) { return normKey(str).split(" ").filter(w => w.length >= 3 && !/^\d+$/.test(w)); }
   function isNameEcho(desc, name) {
     const d = cleanText(desc, 3000);
     if (!d) return false;
-    if (d.length >= 90) return false;                         // وصف حقيقي أطول من اسم
+    if (d.length >= 90) return false;
     const nt = new Set(nameTokens(name));
     const shared = nameTokens(d).filter(w => nt.has(w));
     return new Set(shared).size >= 2 || (d.length < 40 && shared.length >= 1);
@@ -322,8 +311,7 @@ const StoreAI = (() => {
     const qtyRaw = raw.qty === undefined || raw.qty === null || raw.qty === "" ? 1 : Math.floor(toNumber(raw.qty));
     const barcode = cleanText(raw.barcode, 64).replace(/^(\d+)\.0+$/, "$1").replace(/[^\p{L}\p{N}\-_.]/gu, "");
     let description = cleanText(raw.description, 2000);
-    if (!raw._srcDesc && isNameEcho(description, name)) description = "";   // وصف مأخوذ حرفياً من خلية الملف لا يُحذف أبداً
-    // الألوان: كود HEX ← اسم عربي + درجته؛ اسم عادي (Obsidian…) ← درجة من النموذج/القاموس؛ تكرار الاسم الناتج من كودين ← «بني 2»
+    if (!raw._srcDesc && isNameEcho(description, name)) description = "";
     const cb = buildColors(raw.colors);
     const colorsOut = cb.names, colorHex = cb.hexMap;
     return {
@@ -337,19 +325,17 @@ const StoreAI = (() => {
       sizes: toSizeList(raw.sizes),
       description: description,
       descKind: description ? (raw._srcDesc ? "table" : "source") : "",
-      _srcDesc: !!(description && raw._srcDesc),   // يبقى مع العنصر: handleExcelFileWithAI يعيد تمريره على normalizeItems فلا يُحذف وصفه القصير       // table = منقول حرفياً من خلية الجدول | source = من الملف نفسه (استخرجه النموذج) | official = مواصفات رسمية من البحث | ad = شرح إعلاني مكتوب تلقائياً
+      _srcDesc: !!(description && raw._srcDesc),
       brand: cleanText(raw.brand, 60),
       productType: cleanText(raw.productType, 60),
       image: safeUrl(raw.image)
     };
   }
 
-  // يوحّد السطور المكررة (نفس الباركود أو الاسم) بدل إنشاء منتجين: تُجمع الكميات وتُدمج الألوان والمقاسات.
   function normalizeItems(list) {
     const out = [], index = new Map();
     let dropped = 0, merged = 0, badBarcodes = 0;
     for (let raw of (Array.isArray(list) ? list : [])) {
-      // إكسل يحوّل الباركود الطويل إلى 8.99E+12 فيضيع نهائياً: نهمله بدل حفظ رقم خاطئ
       const bc = raw && raw.barcode !== null && raw.barcode !== undefined ? String(raw.barcode).trim() : "";
       if (/^\d+(?:[.,]\d+)?e[+\-]?\d+$/i.test(bc)) { badBarcodes++; raw = Object.assign({}, raw, { barcode: null }); }
       const it = normalizeItem(raw);
@@ -427,7 +413,7 @@ const StoreAI = (() => {
       .replace(/[ \t]+/g, " ")
       .replace(/\n{2,}/g, "\n")
       .trim();
-    if (t.length > 500) {                     // لا نقطع منتصف جملة
+    if (t.length > 500) {
       const cut = t.slice(0, 500);
       const last = Math.max(cut.lastIndexOf("."), cut.lastIndexOf("،"), cut.lastIndexOf("!"), cut.lastIndexOf("؟"));
       t = last > 150 ? cut.slice(0, last + 1) : cut;
@@ -435,7 +421,6 @@ const StoreAI = (() => {
     return t;
   }
 
-  // شرح إعلاني عام حين لا تتوفر مواصفات رسمية: يشرح ما هو المنتج وفائدته حسب نوعه (تجميل، إلكترونيات، ملابس، أجهزة…) بلا اختراع أرقام
   const AD_SYSTEM = [
     "أنت كاتب وصف منتجات لمتجر إلكتروني عراقي. اكتب لكل منتج شرحاً إعلانياً جذاباً بالعربية الفصحى المبسطة من جملتين إلى ثلاث، يوضح ما هو المنتج وفائدته واستخدامه حسب نوعه (مستحضرات تجميل، عناية بالبشرة أو الشعر، إلكترونيات، ملابس، أجهزة منزلية، أو غيرها) ويحفّز على الشراء.",
     "قواعد الدقة الصارمة:",
@@ -463,7 +448,6 @@ const StoreAI = (() => {
     return text;
   }
 
-  // يكتب شرحاً إعلانياً لكل منتج بلا وصف (بعد الاستخراج والبحث). دفعات 8 منتجات في طلب واحد. opts: { skip(item), onProgress(done,total) }
   async function completeDescriptions(items, opts = {}) {
     assertEnabled();
     const warnings = [];
@@ -525,14 +509,22 @@ const StoreAI = (() => {
     }).filter(c => c.key);
     const exact = list.filter(c => c.key === w || c.leaf === w);
     if (exact.length === 1) return exact[0].label;
-    if (exact.length > 1) return undefined;                 // نفس الاسم تحت أكثر من أب ← التباس: يُطلب المسار الكامل
+    if (exact.length > 1) return undefined;
     const partial = list.filter(c => c.key.includes(w) || w.includes(c.leaf));
-    if (partial.length === 1) return partial[0].label;      // التطابق الجزئي مقبول فقط إن كان وحيداً (لا تخمين)
-    return undefined;                                       // غير موجود أو ملتبس
+    if (partial.length === 1) return partial[0].label;
+    return undefined;
   }
 
   function describePlan(plan) {
-    const scope = plan.category ? "على قسم «" + plan.category + "» (وأقسامه الفرعية)" : "على كل الأقسام";
+    let scope = "على كل الأقسام";
+    if (plan.targetType === "barcode" && plan.targetValue) {
+      scope = "على المنتج ذي الباركود (" + plan.targetValue + ")";
+    } else if (plan.targetType === "product" && plan.targetValue) {
+      scope = "على المنتج «" + plan.targetValue + "»";
+    } else if (plan.category) {
+      scope = "على قسم «" + plan.category + "» (وأقسامه الفرعية)";
+    }
+
     const range = (plan.minPrice != null || plan.maxPrice != null)
       ? " للمنتجات التي سعرها" + (plan.minPrice != null ? " ≥ " + plan.minPrice.toLocaleString("en-US") : "") + (plan.maxPrice != null ? (plan.minPrice != null ? " و" : "") + " ≤ " + plan.maxPrice.toLocaleString("en-US") : "")
       : "";
@@ -541,31 +533,46 @@ const StoreAI = (() => {
       discount_fixed: "خصم مبلغ ثابت " + plan.value.toLocaleString("en-US"),
       increase_percent: "رفع الأسعار بنسبة " + plan.value + "%",
       increase_fixed: "رفع الأسعار بمبلغ ثابت " + plan.value.toLocaleString("en-US"),
-      reset_discount: "إلغاء الخصومات وإرجاع السعر الأصلي"
+      reset_discount: "إلغاء الخصومات وإرجاع السعر الأصلي",
+      set_price: "تحديد السعر إلى " + plan.value.toLocaleString("en-US") + " د.ع"
     }[plan.action];
     return act + " " + scope + range;
   }
 
-  // يتحقق من خطة التسعير القادمة من النموذج. أي التباس ← خطأ صريح بدل تنفيذ تخميني على كل المتجر.
   function normalizePricePlan(plan, categories) {
     if (!plan || typeof plan !== "object") throw new Error("لم أفهم أمر التسعير. أعد صياغته بوضوح.");
     if (plan.action === "unclear") throw new Error(cleanText(plan.summary, 200) || "الأمر غير واضح أو يحوي أكثر من عملية. نفّذ عملية واحدة في كل أمر.");
-    if (!PRICE_ACTIONS.includes(plan.action)) throw new Error("لم أفهم نوع العملية المطلوبة (خصم/زيادة/إلغاء خصم).");
+    if (!PRICE_ACTIONS.includes(plan.action)) throw new Error("لم أفهم نوع العملية المطلوبة (تحديد سعر/خصم/زيادة/إلغاء خصم).");
 
     let value = 0;
     if (plan.action !== "reset_discount") {
       value = toNumber(plan.value);
-      if (value <= 0) throw new Error("لم أجد قيمة واضحة في الأمر (نسبة أو مبلغ).");
-      if (plan.action === "discount_percent" && value > 90) throw new Error("نسبة الخصم " + value + "% مرتفعة جداً لتُنفَّذ بأمر نصي. عدّلها يدوياً إن كانت مقصودة.");
-      if (plan.action === "increase_percent" && value > 300) throw new Error("نسبة الزيادة " + value + "% مرتفعة جداً. تحقق من الأمر.");
+      if (value <= 0 && plan.action !== "set_price") throw new Error("لم أجد قيمة واضحة في الأمر (نسبة أو مبلغ).");
+      if (plan.action === "discount_percent" && value > 100) throw new Error("نسبة الخصم لا يمكن أن تتجاوز 100%.");
+      if (plan.action === "increase_percent" && value > 500) throw new Error("نسبة الزيادة مرتفعة جداً. تحقق من الأمر.");
     }
 
+    let targetType = plan.targetType || "all";
+    let targetValue = cleanText(plan.targetValue, 100) || null;
     let category = null;
-    const wanted = cleanText(plan.category, 100);
-    if (wanted && !/^(null|none|all|الكل|كل الأقسام)$/i.test(wanted)) {
-      const resolved = resolveCategoryName(wanted, categories);
-      if (!resolved) throw new Error("لم أجد قسماً مطابقاً لـ «" + wanted + "» في متجرك، أو أن الاسم ينطبق على أكثر من قسم. اكتب اسم القسم كما هو. لم يُنفَّذ شيء.");
-      category = resolved;
+
+    if (targetValue && (/^\d{5,}$/.test(targetValue.replace(/\s+/g, "")) || targetType === "barcode")) {
+      targetType = "barcode";
+      targetValue = toAsciiDigits(targetValue).replace(/\s+/g, "");
+    } else if (plan.category || targetType === "category") {
+      const wanted = cleanText(plan.category || targetValue, 100);
+      if (wanted && !/^(null|none|all|الكل|كل الأقسام)$/i.test(wanted)) {
+        if (/^\d{5,}$/.test(wanted.replace(/\s+/g, ""))) {
+          targetType = "barcode";
+          targetValue = toAsciiDigits(wanted).replace(/\s+/g, "");
+        } else {
+          const resolved = resolveCategoryName(wanted, categories);
+          if (!resolved) throw new Error("لم أجد قسماً أو منتجاً مطابقاً لـ «" + wanted + "» في متجرك. اكتب اسم القسم أو الباركود بدقة.");
+          category = resolved;
+          targetType = "category";
+          targetValue = resolved;
+        }
+      }
     }
 
     const minRaw = plan.minPrice === null || plan.minPrice === undefined ? 0 : toNumber(plan.minPrice);
@@ -574,8 +581,8 @@ const StoreAI = (() => {
     const maxPrice = maxRaw > 0 ? maxRaw : null;
     if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) throw new Error("الحد الأدنى للسعر أكبر من الحد الأعلى. راجع الأمر.");
 
-    const clean = { action: plan.action, value, category, minPrice, maxPrice };
-    clean.summary = describePlan(clean);      // الملخص يُبنى من الخطة المتحقَّق منها، لا من كلام النموذج (قد يناقض الفعل الحقيقي)
+    const clean = { action: plan.action, value, targetType, targetValue, category, minPrice, maxPrice };
+    clean.summary = describePlan(clean);
     return clean;
   }
 
@@ -585,15 +592,24 @@ const StoreAI = (() => {
     if (!cmd) throw new Error("اكتب أمر التسعير أولاً");
     const names = (categories || []).map(catLabel).filter(Boolean);
     const sys = [
-      "أنت محلل أوامر تسعير لمتجر. حوّل أمر المدير إلى JSON واحد فقط (بلا أي نص خارجه):",
-      '{"action":"discount_percent|discount_fixed|increase_percent|increase_fixed|reset_discount|unclear","value":number,"category":string|null,"minPrice":number|null,"maxPrice":number|null,"summary":string}',
-      "قواعد الدقة:",
-      "- حدّد عملية واحدة فقط. إن احتوى الأمر أكثر من عملية أو كان غامضاً أو ليس أمر تسعير فأرجع action=\"unclear\" وفي summary سبب ذلك بجملة عربية قصيرة.",
-      "- خصم/تخفيض/تنزيل ← discount. زيادة/رفع/غلاء ← increase. إلغاء الخصم/إرجاع السعر الأصلي ← reset_discount (value=0).",
-      "- \"%\" أو \"بالمئة\" أو \"نسبة\" ← الصيغة percent وإلا فالصيغة fixed. value رقم موجب بأرقام لاتينية (٥٠٠٠ ← 5000).",
-      "- الكلمات: \"ألف\"=1000 (\"5 آلاف\"=5000) و\"مليون\"=1000000 و\"نص/نصف\"=50% و\"ربع\"=25%.",
-      "- category: انسخ القسم حرفياً من القائمة أدناه (الأقسام الفرعية بصيغة «الأب › الفرعي»؛ إن ذكر المدير قسماً فرعياً بأي صيغة فاكتب مساره الكامل من القائمة) إن ذكر قسماً يطابقها. إن ذكر قسماً غير موجود في القائمة فاكتب ما قاله كما هو (لا تستبدله بقسم آخر). إن لم يذكر قسماً فـ null. ممنوع تخمين قسم لم يُذكر.",
-      "- minPrice/maxPrice فقط إذا حدد المدير نطاق سعر (مثل \"للمنتجات فوق 10000\" ← minPrice=10000)، وإلا null.",
+      "أنت مساعد تسعير ذكي وخبير لمتجر إلكتروني. مهمتك تحليل أمر المدير بدقة وتحويله إلى JSON واحد فقط:",
+      '{"action":"discount_percent|discount_fixed|increase_percent|increase_fixed|reset_discount|set_price|unclear","value":number,"targetType":"category|barcode|product|all","targetValue":string|null,"category":string|null,"minPrice":number|null,"maxPrice":number|null,"summary":string}',
+      "",
+      "قواعد التحليل:",
+      "1. نوع العملية (action):",
+      "   - set_price: تحديد أو تغيير سعر المنتج مباشرة إلى رقم محدد (مثل: \"غير سعر X إلى 5000\"، \"اجعل سعر X بـ 10000\"، \"سعر X = 7500\").",
+      "   - discount_percent: خصم نسبة مئوية (مثل: \"خصم 10% على X\").",
+      "   - discount_fixed: خصم مبلغ ثابت (مثل: \"خصم 5000 من سعر X\").",
+      "   - increase_percent / increase_fixed: زيادة نسبة أو مبلغ.",
+      "   - reset_discount: إلغاء الخصم وإرجاع السعر القديم (value=0).",
+      "",
+      "2. الهدف المستهدف (targetType و targetValue):",
+      "   - إذا ذكر المدير رقماً طويلاً متصلاً (سلسلة أرقام 5 أرقام أو أكثر مثل 6291005000017) فهو barcode حصراً: ضع targetType=\"barcode\" و targetValue برقم الباركود نفسه و category=null.",
+      "   - إذا ذكر اسم منتج بعينه فـ targetType=\"product\" و targetValue=اسم المنتج.",
+      "   - إذا ذكر قسماً من قائمة الأقسام المتاحة فـ targetType=\"category\" و targetValue=اسم القسم و category=اسم القسم.",
+      "   - إذا كان الأمر عاماً (مثل: \"خصم 10% على كل المنتجات\") فـ targetType=\"all\" و targetValue=null و category=null.",
+      "",
+      "3. القيمة (value): رقم موجب فقط محول لأرقام إنجليزية (مثال: \"10 آلاف\" ← 10000).",
       "الأقسام المتاحة: " + (names.length ? names.join("، ") : "(لا أقسام)")
     ].join("\n");
     const data = await callServerApi("groq_chat", { prompt: cmd, systemInstruction: sys, asJson: true, schema: PRICE_SCHEMA });
@@ -620,7 +636,6 @@ const StoreAI = (() => {
     });
   }
 
-  // يصغّر صور الهاتف الضخمة قبل الإرسال (أسرع وأرخص وأقل عرضة لتجاوز الحد) ويرجع {base64, mimeType}.
   async function prepareImage(file) {
     if (!file) throw new Error("لم يتم اختيار صورة");
     if (file.size > 30 * 1024 * 1024) throw new Error("الصورة كبيرة جداً (أكثر من 30MB).");
@@ -631,13 +646,12 @@ const StoreAI = (() => {
       const canvas = document.createElement("canvas");
       canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);     // PNG الشفاف لا يتحول لأسود
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
       ctx.drawImage(img, 0, 0, w, h);
       const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.9));
       if (!blob) throw new Error("encode");
       return { base64: await blobToBase64(blob), mimeType: "image/jpeg" };
     } catch (e) {
-      // صيغة لا يفك المتصفح ترميزها (مثل HEIC خارج سفاري): نرسل الأصل إن كان صغيراً وإلا نطلب تحويله.
       if (file.size > MAX_FILE_BYTES) throw new Error("تعذّر تصغير الصورة وحجمها كبير. صوّرها بصيغة JPEG أو حوّلها.");
       return { base64: await blobToBase64(file), mimeType: (file.type || "image/jpeg").replace("image/jpg", "image/jpeg") };
     }
@@ -649,8 +663,6 @@ const StoreAI = (() => {
     return { base64: await blobToBase64(file), mimeType: "application/pdf" };
   }
 
-  // تقسيم CSV إلى سجلات منطقية (يحترم الحقول المقتبسة التي تحوي أسطراً جديدة)
-  // عدد الخلايا غير الفارغة في سطر CSV (لاكتشاف سطور العنوان/الشعار فوق سطر عناوين الأعمدة)
   function csvCellCount(row) {
     let n = 0, inQ = false, cur = "";
     for (const ch of row) {
@@ -661,7 +673,7 @@ const StoreAI = (() => {
     if (cur.trim()) n++;
     return n;
   }
-  // تقسيم سطر CSV إلى خلاياه (يحترم علامات الاقتباس)
+
   function parseCsvCells(row) {
     const cells = [];
     let cur = "", inQ = false;
@@ -675,8 +687,7 @@ const StoreAI = (() => {
     cells.push(cur);
     return cells;
   }
-  // أي عمود هو «الوصف»؟ نقرره بالكود (لا بتخمين النموذج الذي يتغير من مرة لأخرى).
-  // 1) من عنوان العمود: وصف/Description ثم تفاصيل/مواصفات.  2) إن لم يُعرف العنوان: العمود ذو النصوص الأطول (متوسط ≥ 50 حرفاً وأغلب صفوفه معبّأة وليس روابط).
+
   function findDescColumn(headerCells, bodyRows) {
     const bad = /(رابط|url|link|صوره|image|photo)/;
     const tier = h => {
@@ -702,7 +713,7 @@ const StoreAI = (() => {
     });
     return best;
   }
-  // يطابق منتجاً أعاده النموذج مع سطره في الجدول بالاسم (احتياط إن لم يُرجع رقم السطر). يرجع رقم السطر الشامل أو 0.
+
   function matchRowByName(item, rows, base) {
     const tok = s => new Set(normKey(s).split(" ").filter(w => w.length >= 2));
     const parts = String((item && item.name) || "").split(/\s*[\/|]\s*/).map(tok).filter(t => t.size);
@@ -711,7 +722,7 @@ const StoreAI = (() => {
     rows.forEach((r, j) => {
       parseCsvCells(r).forEach(cell => {
         const ct = tok(cell);
-        if (!ct.size || ct.size > 25) return;           // خلايا الوصف الطويلة ليست أسماء
+        if (!ct.size || ct.size > 25) return;
         parts.forEach(T => {
           let hit = 0; T.forEach(w => { if (ct.has(w)) hit++; });
           const score = hit / T.size, extra = ct.size - hit;
@@ -721,6 +732,7 @@ const StoreAI = (() => {
     });
     return bestScore >= 0.75 ? bestIdx : 0;
   }
+
   function findHeaderIndex(rows) {
     const lim = Math.min(rows.length - 2, 7);
     if (lim < 1) return 0;
@@ -730,6 +742,7 @@ const StoreAI = (() => {
     for (let i = 0; i <= lim; i++) if (counts[i] >= Math.max(2, Math.ceil(max * 0.6))) return i;
     return 0;
   }
+
   function splitCsvRows(text) {
     const rows = [];
     let cur = "", inQ = false;
@@ -750,8 +763,7 @@ const StoreAI = (() => {
     return rows;
   }
 
-  /* ------------------------------ 4) قراءة الفواتير والجداول والصور ------------------------------ */
-  // مخطط الجداول: رقم السطر إلزامي وصحيح (في الصور/PDF لا أسطر فيبقى اختيارياً) فيرتبط كل منتج بسطره وبوصفه الأصلي
+  /* ------------------------------ 4) قراءة الفواتير والجداول ------------------------------ */
   const INVOICE_SCHEMA_TABLE = JSON.parse(JSON.stringify(INVOICE_SCHEMA));
   INVOICE_SCHEMA_TABLE.properties.items.items.properties.row = { type: "integer" };
 
@@ -778,7 +790,8 @@ const StoreAI = (() => {
       nameRule,
       "2. brand: ماركة المنتج إن ظهرت أو عُرفت من اسمه، وإلا \"\". productType: نوع المنتج بكلمتين أو ثلاث (سيروم، شامبو، هاتف ذكي، قميص)، وإلا \"\".",
       "3. category: لا تعتمد على عمود تصنيف قديم في الملف. الترتيب الإلزامي: (أ) **نوع المنتج أولاً** — اختر القسم الذي يطابق نوعه فعلاً (سيروم/مرطب/غسول ← العناية بالبشرة، شامبو/بلسم ← العناية بالشعر، أحمر شفاه/كحل ← المكياج، عطر ← العطور، هاتف/سماعة ← إلكترونيات)؛ (ب) وإن لم يوجد قسم لنوعه فقسم باسم **ماركته** إن وُجد؛ (ج) وإلا اكتب اسم قسم عربياً موجزاً مناسباً لنوعه. **ممنوع إجبار المنتج على قسم لا يناسبه** (سيروم بشرة ليس في «العناية بالشعر»).",
-      "4. colors: استخرج ألوان أو درجات المنتج. إذا كان الجدول يحتوي على عمود للون أو المظهر (مثل: اللون، اللون / المظهر، المظهر، الدرجة، Shade، Color)، فانسخ محتواه إلزامياً كما ورد في الخلية وضع كل درجة كعنصر مستقل في colors، ولا تفرغ الحقل أبداً حتى لمنتجات العناية بالبشرة أو الكريمات. استخرج اللون الأساسي (مثل: وردي، بيج، أبيض، بنفسجي، عسلي، كرزي) وضع درجته التقريبية في hex بصيغة #RRGGBB.",      "5. sizes: المقاسات/السعات/الأوزان/السعات التخزينية الفعلية المتاحة كخيارات شراء فقط (\"50ml\"، \"30 مل\"، \"S\"، \"XL\"، \"42\"، \"256GB\") وإلا []. **عمود «سعة الذاكرة» أو «رام/تخزين» أو Storage/Capacity في الجدول هو سعات شراء**: انسخ قيمة الخلية كما هي (مثل 12/256 أو 16/1024 أو 8GB/128GB) كعنصر في sizes (تُوحَّد تلقائياً إلى 12GB + 256GB) ولا تتركها فارغة ولا تضعها في الوصف. **النسب المئوية وتراكيز المكوّنات (10%، 1%) وعدد القطع ورقم الموديل ليست مقاسات** — هي جزء من الاسم.",
+      "4. colors: استخرج ألوان أو درجات المنتج. إذا كان الجدول يحتوي على عمود للون أو المظهر (مثل: اللون، اللون / المظهر، المظهر، الدرجة، Shade، Color)، فانسخ محتواه إلزامياً كما ورد في الخلية وضع كل درجة كعنصر مستقل في colors، ولا تفرغ الحقل أبداً حتى لمنتجات العناية بالبشرة أو الكريمات. استخرج اللون الأساسي (مثل: وردي، بيج، أبيض، بنفسجي، عسلي، كرزي) وضع درجته التقريبية في hex بصيغة #RRGGBB.",
+      "5. sizes: المقاسات/السعات/الأوزان/السعات التخزينية الفعلية المتاحة كخيارات شراء فقط (\"50ml\"، \"30 مل\"، \"S\"، \"XL\"، \"42\"، \"256GB\") وإلا []. **عمود «سعة الذاكرة» أو «رام/تخزين» أو Storage/Capacity في الجدول هو سعات شراء**: انسخ قيمة الخلية كما هي (مثل 12/256 أو 16/1024 أو 8GB/128GB) كعنصر في sizes (تُوحَّد تلقائياً إلى 12GB + 256GB) ولا تتركها فارغة ولا تضعها في الوصف. **النسب المئوية وتراكيز المكوّنات (10%، 1%) وعدد القطع ورقم الموديل ليست مقاسات** — هي جزء من الاسم.",
       "6. image: رابط مباشر لصورة المنتج (يبدأ بـ http:// أو https://) إن وُجد صراحة في المصدر وإلا null.",
       "7. price: سعر بيع الوحدة (وليس إجمالي السطر ولا سعر الجملة إن وُجد عمود لسعر البيع) رقماً فقط بلا فواصل أو عملة. إن لم يتضح السعر فـ 0.",
       "8. qty: الكمية صحيحاً؛ إن لم تُذكر فـ 1.",
@@ -787,7 +800,8 @@ const StoreAI = (() => {
         ? "10. description: اتركه دائماً \"\" (فارغاً). وصف المنتجات موجود في عمود في الجدول وسيُنسخ منه آلياً حرفياً؛ لا تكتبه ولا تلخصه (هذا يوفّر وقتاً كبيراً)."
         : "10. description: انسخ نص عمود الوصف/المواصفات/التفاصيل (Description/Details/Specs) من الجدول **حرفياً كما هو** حتى لو كان قصيراً أو ذكر اسم المنتج أو الماركة أو الحجم؛ لا تختصره ولا تعيد صياغته ولا تتجاهله ولا تستبدله بوصف من عندك. في الصور والـ PDF انسخ فقرة الوصف المطبوعة إن وُجدت. ممنوع أن تضع اسم المنتج وحده كوصف. إن لم يوجد في المصدر وصف فاتركه \"\" (يُكتب لاحقاً تلقائياً).",
       "",
-      "إن كانت الصورة لعبوة منتج واحد أو لرف: اقرأ اسم كل منتج من عبوته نفسها (الماركة + النوع + الحجم المكتوب عليها)؛ السعر 0 والكمية 1 ما لم تظهر على الصورة.",      "",
+      "إن كانت الصورة لعبوة منتج واحد أو لرف: اقرأ اسم كل منتج من عبوته نفسها (الماركة + النوع + الحجم المكتوب عليها)؛ السعر 0 والكمية 1 ما لم تظهر على الصورة.",
+      "",
       "أرجع JSON فقط بلا أي نص آخر:",
       '{"items":[{"name":"","brand":"","productType":"","category":"","price":0,"qty":1,"barcode":null,"colors":[{"name":"","hex":""}],"sizes":[],"description":"","image":null,"row":null}]}',
       'وإن لم تجد منتجات فأرجع {"items":[]}.'
@@ -800,8 +814,6 @@ const StoreAI = (() => {
     return d && Array.isArray(d.items) ? d.items : [];
   }
 
-  // inputData: نص CSV (mimeType = text/csv|text/plain) أو base64 لصورة/PDF.
-  // يرجع { items, warnings[] } — العناصر منظّفة ومدموجة المكرر. opts.onProgress(done, total)
   async function scanInvoice(inputData, mimeType = "image/jpeg", storeCategories = [], opts = {}) {
     assertEnabled();
     const warnings = [];
@@ -814,10 +826,9 @@ const StoreAI = (() => {
       const hi = findHeaderIndex(rows);
       if (hi > 0) warnings.push("تم تجاهل " + hi + " سطر علوي (عنوان/شعار) قبل سطر عناوين الأعمدة.");
       const header = rows[hi];
-      // سطرا المثال في القالب الجاهز «(مثال) …» يُتجاهلان تلقائياً حتى لو نسي المدير حذفهما
       const body = rows.slice(hi + 1).filter(r => !parseCsvCells(r).some(cell => /^\s*\(\s*مثال\s*\)/.test(cell)));
       const headerCells = parseCsvCells(header);
-      const descCol = findDescColumn(headerCells, body);   // عمود الوصف (إن وُجد) يُنسخ حرفياً من الملف بعد رد النموذج
+      const descCol = findDescColumn(headerCells, body);
       if (typeof console !== "undefined") console.info("[وصف] العمود المعتمد:", descCol >= 0 ? headerCells[descCol] : "(لا يوجد)", "| الأعمدة:", headerCells.join(" ، "));
       const chunks = [];
       for (let i = 0; i < body.length; i += CHUNK_ROWS) chunks.push(body.slice(i, i + CHUNK_ROWS));
@@ -826,19 +837,18 @@ const StoreAI = (() => {
       const results = new Array(chunks.length).fill(null);
       const runChunk = async (i) => {
         try {
-          // نرقّم الأسطر (عمود #) ليرجع النموذج رقم سطر كل منتج فنربطه بخلية الوصف الأصلية
           const base = i * CHUNK_ROWS;
           const numbered = ["#," + header].concat(chunks[i].map((r, j) => (base + j + 1) + "," + r)).join("\n");
           const resp = await callServerApi("gemini_vision", { prompt, fileText: numbered, schema: INVOICE_SCHEMA_TABLE });
           let got = readItems(resp);
           if (descCol >= 0) {
-            const sameCount = got.length === chunks[i].length;   // نفس عدد المنتجات والأسطر: الترتيب هو الاحتياط الأخير
+            const sameCount = got.length === chunks[i].length;
             got = got.map((it, k) => {
               let n = Number(it && it.row);
-              if (!Number.isInteger(n) || n <= base || n > base + chunks[i].length) n = matchRowByName(it, chunks[i], base);   // لا رقم صالح: نطابق بالاسم
+              if (!Number.isInteger(n) || n <= base || n > base + chunks[i].length) n = matchRowByName(it, chunks[i], base);
               if (!n && sameCount) n = base + k + 1;
-              if (!n) return it;                                                                                          // لا مطابقة: نبقي ما كتبه النموذج
-              const cell = String(parseCsvCells(body[n - 1])[descCol] || "").replace(/\s*\[URL:[^\]]*\]/g, "");   // [URL: …] تضيفها واجهة الأدمن لروابط الإكسل
+              if (!n) return it;
+              const cell = String(parseCsvCells(body[n - 1])[descCol] || "").replace(/\s*\[URL:[^\]]*\]/g, "");
               return Object.assign({}, it, { description: cleanText(cell, 2000), _srcDesc: true });
             });
           }
@@ -852,7 +862,6 @@ const StoreAI = (() => {
         if (opts.onProgress) opts.onProgress(doneChunks, chunks.length);
       };
       if (opts.onProgress) opts.onProgress(0, chunks.length);
-      // 3 دفعات في آن واحد بدل واحدة بعد أخرى (الوقت ≈ ثلث ما كان في الملفات الكبيرة) مع حفظ ترتيب الأسطر
       for (let g = 0; g < chunks.length; g += 3) {
         await Promise.all(chunks.slice(g, g + 3).map((_, k) => runChunk(g + k)));
       }
@@ -873,7 +882,7 @@ const StoreAI = (() => {
     return { items: norm.items, warnings };
   }
 
-  /* ------------------------------ 5) مسح الرف (غير مستعملة حالياً في admin.js) ------------------------------ */
+  /* ------------------------------ 5) مسح الرف ------------------------------ */
   async function scanShelf(base64Image, mimeType = "image/jpeg") {
     assertEnabled();
     const prompt = [
@@ -896,10 +905,7 @@ const StoreAI = (() => {
     return { products, partial: !!resp.partial };
   }
 
-  /* ------------------------------ 6) إثراء المنتجات ببحث Google (وصف/ألوان/مقاسات/صورة/قسم) ------------------------------ */
-  // ملف المبيعات يحوي غالباً الاسم والكود والسعر والعدد فقط. هنا يبحث Gemini (Grounding) عن المنتج الحقيقي ويُكمل الوصف والألوان والمقاسات والقسم (لا صور).
-  // قواعد الدقة: (1) لا يُعتمد أي رد غير مؤسَّس على مصادر بحث فعلية (يرجعها الخادم من groundingMetadata لا من كلام النموذج)،
-  // (2) الثقة المنخفضة أو «لم يُعثر على المنتج» ← تُترك الحقول فارغة بدل التخمين، (3) لا نستبدل ما كتبه التاجر (الاسم الرسمي يُعرض كاقتراح).
+  /* ------------------------------ 6) إثراء المنتجات ببحث Google ------------------------------ */
   const ENRICH_SCHEMA = {
     type: "object",
     properties: {
@@ -942,7 +948,6 @@ const StoreAI = (() => {
     ].filter(x => x !== "").join("\n");
   }
 
-  // يطبّق نتيجة البحث على المنتج (دالة صافية قابلة للاختبار). لا تستبدل الموجود؛ تكمل الناقص فقط.
   function applyEnrichment(item, result, categories) {
     const out = Object.assign({}, item);
     const d = (result && result.data) || {};
@@ -952,7 +957,7 @@ const StoreAI = (() => {
     if (grounded && d.found === true) state = ["high", "medium", "low"].includes(d.confidence) ? d.confidence : "low";
     const meta = { state, officialName: "", sources: sources.slice(0, 3).map(x => ({ uri: cleanText(x.uri, 500), title: cleanText(x.title, 80) })), addedVariants: false };
     out.enriched = meta;
-    if (state !== "high" && state !== "medium") return out;      // لم يُعثر عليه / ثقة منخفضة ← لا نملأ شيئاً
+    if (state !== "high" && state !== "medium") return out;
 
     meta.officialName = cleanText(d.officialName, 200);
     const officialDesc = cleanText(d.description, 1200);
@@ -962,7 +967,6 @@ const StoreAI = (() => {
     const sizes = toSizeList(d.sizes);
     if (!(out.sizes && out.sizes.length) && sizes.length) { out.sizes = sizes; meta.addedVariants = true; }
 
-    // القسم: (1) نوع المنتج ← (2) ماركته ← (3) اقتراح (النموذج رتّب ذلك؛ نتحقق أن النص من قائمة المتجر فعلاً)
     const resolved = d.category ? resolveCategoryName(d.category, categories) : null;
     if (resolved) out.category = resolved;
     else if (cleanText(d.suggestedCategory, 60)) out.category = cleanText(d.suggestedCategory, 60);
@@ -970,8 +974,7 @@ const StoreAI = (() => {
   }
 
   const isConfigError = e => /no_grounding|لا يدعم البحث|auth_not_configured|غير مضبوط|غير موجودة على هذه الاستضافة|سجّل الدخول|غير مصرّح/.test((e && e.message) || "");
-  // opts: { skip(item)→bool, onProgress(done,total), concurrency, retryDelayMs, budgetMs, perCallMs }
-  // budgetMs: سقف زمني للمرحلة كلها (افتراضي aiEnrichBudgetSec = 20 ثانية). بعده لا تبدأ عمليات بحث جديدة ويُفتح المراجعة بما اكتمل.
+
   async function enrichItems(items, categories = [], opts = {}) {
     assertEnabled();
     const warnings = [];
@@ -993,11 +996,10 @@ const StoreAI = (() => {
 
     const worker = async () => {
       while (!stop && cursor < run.length) {
-        if (Date.now() >= deadline) break;          // انتهى الوقت المسموح: الباقي يُترك بلا بحث (يُكتب له شرح إعلاني بعدها)
+        if (Date.now() >= deadline) break;
         const idx = run[cursor++];
         const item = list[idx];
         try {
-          // محاولتان فقط (ثانية واحدة بينهما) وبمهلة قصيرة لكل طلب، وكلاهما ضمن الوقت المتبقي من السقف
           let res = null, lastErr = null;
           for (let attempt = 0; attempt < 2 && !res; attempt++) {
             const left = deadline - Date.now();
@@ -1018,7 +1020,7 @@ const StoreAI = (() => {
           failed++;
           if (/انتهت مهلة/.test((e && e.message) || "")) timedOut++;
           if (isConfigError(e)) {
-            stop = true;       // خطأ إعداد: لا فائدة من تكرار الطلبات
+            stop = true;
             warnings.push("توقف الإثراء: " + e.message);
           }
         }
@@ -1040,7 +1042,6 @@ const StoreAI = (() => {
   const api = {
     generateDescription, parsePriceCommand, scanShelf, scanInvoice,
     prepareImage, preparePdf,
-    // للاختبارات وللاستعمال من admin.js
     normalizeItems, normalizePricePlan, toNumber, splitCsvRows, cleanDescription, normKey, parseHexColor, hexToColorName, splitColorEntry, buildInvoicePrompt, buildEnrichPrompt, applyEnrichment, enrichItems, completeDescriptions, isValidSize, isValidColor, isNameEcho,
     colorHexFromName, resolveColorHex, parseCapacity, normalizeSize, parseCsvCells, findDescColumn, matchRowByName
   };
