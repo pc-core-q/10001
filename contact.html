@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>تواصل معنا | {{storeName}}</title>
+<link rel="stylesheet" href="css/style.css?v=93">
+  <link rel="stylesheet" href="css/refresh.css?v=93">
+  <script src="js/config.js?v=93"></script>
+  <script src="js/themes.js?v=93"></script>
+  <script src="js/boot.js?v=93"></script>
+</head>
+<body>
+
+<div id="site-header" data-active="contact"></div>
+
+<main>
+  <section class="page-header">
+    <div class="container">
+      <div class="breadcrumb"><a href="index.html">الرئيسية</a> / تواصل معنا</div>
+      <h1>تواصل معنا</h1>
+      <p>يسعدنا مساعدتك في أي وقت — تواصل معنا عبر واتساب أو انستغرام أو الهاتف.</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:10px;">
+    <div class="container">
+      <div class="feature-grid" id="contactCards"></div>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container" style="max-width:640px;">
+      <div class="form-card" style="max-width:100%;">
+        <h3 style="margin-bottom:6px;">معلومات إضافية</h3>
+        <div class="detail-meta" id="extraInfo" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+
+<!-- سكربتات مؤجلة (defer): لا تحجب الرسم. القراءة من Firebase عبر REST داخل store.js (بدون SDK) -->
+<script src="js/icons.js?v=93" defer></script>
+<script src="js/store.js?v=93" defer></script>
+<script src="js/whatsapp.js?v=93" defer></script>
+<script src="js/app.js?v=93" defer></script>
+<script>
+  /* تُستدعى عند التحميل وعند وصول الإعدادات من Firebase (كانت تعرض "لم يتم إعداد بيانات التواصل" لأول زائر ولا تتحدّث) */
+  function renderContactPage() {
+    const s = Store.getSettings();
+
+    const cards = [];
+    if (s.whatsapp) cards.push({ icon: "whatsapp", title: "واتساب", desc: "أسرع طريقة للطلب والاستفسار", link: "https://wa.me/" + whatsappDigitsOnly(s.whatsapp), label: "راسلنا الآن" });
+    if (s.instagram) cards.push({ icon: "instagram", title: "انستغرام", desc: "تابع جديدنا وعروضنا", link: safeUrl(s.instagram), label: "زيارة الحساب" });
+    if (s.tiktok) cards.push({
+      customIcon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 448 512" fill="currentColor"><path d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z"/></svg>',
+      title: "تيك توك",
+      desc: "شاهد مقاطعنا وتفاعل معنا",
+      link: safeUrl(s.tiktok),
+      label: "تابعنا"
+    });
+    if (s.phone) cards.push({ icon: "phone", title: "الهاتف", desc: s.phone, link: "tel:" + String(s.phone).replace(/[^0-9+]/g, ""), label: "اتصال مباشر" });
+    if (s.phone2) cards.push({ icon: "phone", title: "هاتف ثانٍ", desc: s.phone2, link: "tel:" + String(s.phone2).replace(/[^0-9+]/g, ""), label: "اتصال مباشر" });
+    if (s.address) {
+      const mapLink = safeMapUrl(s.mapUrl);
+      cards.push({ icon: "home", title: "الموقع", desc: s.address, descLink: mapLink || null, link: mapLink || null, label: mapLink ? "افتح في الخرائط" : null });
+    }
+
+    document.getElementById("contactCards").innerHTML = cards.length ? cards.map(function (c) {
+      // قراءة الأيقونة المخصصة أو الأيقونة الافتراضية
+      const iconHtml = c.customIcon ? c.customIcon : iconSvg(c.icon);
+      
+      return '<div class="feature-card">' +
+        '<div class="icon">' + iconHtml + "</div>" +
+        "<h3>" + c.title + "</h3>" +
+        "<p>" + (c.descLink ? '<a href="' + escapeHtml(c.descLink) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">' + escapeHtml(c.desc) + "</a>" : escapeHtml(c.desc)) + "</p>" +
+        (c.link ? '<a href="' + escapeHtml(c.link) + '" target="_blank" rel="noopener" class="btn btn-outline btn-sm">' + c.label + "</a>" : "") +
+      "</div>";
+    }).join("") : '<div class="empty-state"><p>لم يتم إعداد بيانات التواصل بعد من لوحة التحكم.</p></div>';
+
+    let extraInfoHtml = "";
+    if (s.workingHours) extraInfoHtml += "<span><strong>ساعات العمل:</strong> " + escapeHtml(s.workingHours) + "</span>";
+    if (s.deliveryInfo) extraInfoHtml += "<span><strong>معلومات التوصيل:</strong> " + escapeHtml(s.deliveryInfo) + "</span>";
+    document.getElementById("extraInfo").innerHTML = extraInfoHtml || "<span>لم يتم إضافة معلومات إضافية بعد.</span>";
+  }
+  document.addEventListener("DOMContentLoaded", renderContactPage);
+  document.addEventListener("store:synced", renderContactPage);
+</script>
+</body>
+</html>

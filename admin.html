@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-no-analytics>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>لوحة تحكم الأدمن | {{storeName}}</title>
+  <link rel="stylesheet" href="css/style.css?v=93">
+  <link rel="stylesheet" href="css/refresh.css?v=93">
+  <script src="js/config.js?v=93"></script>
+  <script src="js/themes.js?v=93"></script>
+  <script src="js/boot.js?v=93"></script>
+</head>
+<body>
+
+<div id="adminApp" class="admin-shell">
+  
+  <!-- الخلفية الشفافة المظلمة للقائمة الجانبية في الهاتف -->
+  <div class="sidebar-overlay" onclick="toggleAdminSidebar()"></div>
+
+  <!-- ============ Sidebar ============ -->
+  <aside class="admin-sidebar" id="adminSidebar">
+    <div class="brand" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <img data-logo src="assets/logo/logo.png" alt="شعار المتجر" style="width:40px;height:40px;border-radius:50%;">
+        <span class="brand-name"><span data-cfg="storeName" style="display:inline;margin:0;color:inherit;font:inherit">{{storeName}}</span><span style="color:rgba(var(--on-primary-rgb),.55);">لوحة التحكم</span></span>
+      </div>
+      <!-- زر إغلاق القائمة الجانبية في الموبايل -->
+      <button type="button" class="btn-icon btn-sm admin-close-sidebar" onclick="toggleAdminSidebar()" title="إغلاق القائمة" style="background:rgba(var(--on-primary-rgb),.1); border:none; color:var(--on-primary); cursor:pointer;">__ICON_CLOSE__</button>
+    </div>
+
+    <nav class="admin-nav">
+      <button type="button" data-panel="dashboard" class="active">__ICON_GAUGE__ الإحصائيات</button>
+      <button type="button" data-panel="products">__ICON_BOX__ المنتجات</button>
+      <button type="button" data-panel="categories">__ICON_LAYERS__ الأقسام</button>
+      <button type="button" data-panel="outofstock">__ICON_ALERT__ نفذ من المتجر <span class="pill pill-off" id="oosBadge" style="margin-inline-start:auto;min-width:24px;text-align:center;">0</span></button>
+      <button type="button" data-panel="ads">__ICON_IMAGE__ الإعلانات</button>
+      <button type="button" data-panel="orders">__ICON_CART__ الطلبات</button>
+      <button type="button" data-panel="settings">__ICON_SETTINGS__ الإعدادات</button>
+    </nav>
+
+    <div class="admin-logout">
+      <a href="index.html" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;font-weight:600;font-size:.92rem;">__ICON_HOME__ عرض المتجر</a>
+      <button type="button" id="adminLogoutBtn" style="width:100%;">__ICON_LOGOUT__ تسجيل الخروج</button>
+    </div>
+  </aside>
+
+  <!-- ============ Main ============ -->
+  <main class="admin-main">
+    <div class="admin-topbar" style="display:flex; align-items:center; gap:12px;">
+      <button class="btn-icon" id="adminSidebarToggle" title="فتح القائمة">__ICON_MENU__</button>
+      <h2 style="margin:0;">مرحبًا بك 👋</h2>
+    </div>
+
+    <!-- ---- Dashboard panel ---- -->
+    <section class="admin-panel-view" id="panel-dashboard">
+      <div class="admin-stats" id="statsRow"></div>
+      <div class="admin-panel">
+        <div class="panel-head"><h3 style="margin:0;">آخر الطلبات عبر واتساب</h3></div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>الزبون / العنوان</th>
+                <th>النوع</th>
+                <th>المنتجات</th>
+                <th>الإجمالي</th>
+                <th>حالة الطلب</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- Products panel ---- -->
+    <section class="admin-panel-view" id="panel-products" style="display:none;">
+      <div class="admin-panel">
+        <div class="panel-head">
+          <h3 style="margin:0;">إدارة المنتجات</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="adminProductSearch" placeholder="بحث عن منتج..." style="padding:9px 14px;border-radius:999px;border:1px solid var(--line-strong);font-family:inherit;">
+            
+            <!-- زر استيراد وتحديث الأسعار والمخزون من ملف الإكسل -->
+            <label class="btn btn-outline btn-sm" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; margin:0;" title="معاينة وتحديث الأسعار والكميات عبر ملف إكسل أو CSV">
+              <span>📊 استيراد إكسل</span>
+              <input type="file" id="excelSyncInput" accept=".xlsx, .xls, .csv" style="display:none;">
+            </label>
+
+            <button class="btn btn-primary btn-sm" id="addProductBtn">__ICON_PLUS__ إضافة منتج</button>
+          </div>
+        </div>
+
+        <!-- ============ شريط أدوات الذكاء الاصطناعي للمنتجات ============ -->
+        <div class="ai-toolkit-bar" style="background:var(--olive-50); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:18px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.1rem;">⚡</span>
+              <strong style="font-size:0.95rem; color:var(--ink-500);">التحكم الذكي بالمنتجات والأسعار</strong>
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <!-- زر رفع صورة: يدمج الكاميرا والمعرض لكل من الرف، الوصل، أو السكرين شوت -->
+              <label class="btn btn-outline btn-sm" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; margin:0; background:#fff;" title="تصوير بالكاميرا أو اختيار صورة من المعرض (وصل، رف، أو سكرين شوت)">
+                <span>🖼️ رفع صورة</span>
+                <input type="file" id="aiImageInput" accept="image/*" style="display:none;">
+              </label>
+
+              <!-- زر رفع ملف: مستندات PDF وقوائم الفواتير الإلكترونية مباشرة -->
+              <label class="btn btn-outline btn-sm" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; margin:0; background:#fff;" title="رفع فاتورة PDF، مستند، أو جدول بضائع">
+                <span>📄 رفع ملف</span>
+                <input type="file" id="aiFileInput" accept=".pdf, .xlsx, .xls, .csv, application/pdf" style="display:none;">
+              </label>
+
+            </div>
+          </div>
+
+          <!-- شريط تعديل الأسعار بالأوامر الطبيعية -->
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="aiPriceCommandInput" placeholder="اكتب أمراً مثل: خصم 10% على قسم العناية بالشعر، أو أرجع الأسعار الأصلية..." style="flex:1; min-width:260px; padding:9px 14px; border-radius:8px; border:1px solid var(--line-strong); font-size:0.9rem; font-family:inherit; background:#fff;">
+            <button type="button" id="btnExecutePriceCommand" class="btn btn-primary btn-sm" style="white-space:nowrap;">
+              تطبيق التسعير الذكي ✨
+            </button>
+            <button type="button" id="btnUndoPriceCommand" class="btn btn-outline btn-sm" style="white-space:nowrap; display:none;" title="يعيد أسعار آخر أمر تسعير ذكي (للمنتجات التي لم يتغير سعرها منذ ذلك)">
+              ↩️ تراجع عن آخر تسعير
+            </button>
+          </div>
+        </div>
+        <!-- ============================================================== -->
+
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th>الصورة</th><th>الباركود</th><th>الاسم</th><th>القسم</th><th>السعر</th><th>الكمية</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+            <tbody id="productsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- Categories panel ---- -->
+    <section class="admin-panel-view" id="panel-categories" style="display:none;">
+      <div class="admin-panel">
+        <div class="panel-head">
+          <h3 style="margin:0;">إدارة الأقسام</h3>
+          <button class="btn btn-primary btn-sm" id="addCategoryBtn">__ICON_PLUS__ إضافة قسم</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th>الصورة/الأيقونة</th><th>الاسم</th><th>عدد المنتجات</th><th>إجراءات</th></tr></thead>
+            <tbody id="categoriesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- Ads panel ---- -->
+    <section class="admin-panel-view" id="panel-ads" style="display:none;">
+      <div class="admin-panel">
+        <div class="panel-head">
+          <h3 style="margin:0;">إدارة إعلانات السلايدر</h3>
+          <button class="btn btn-primary btn-sm" id="addAdBtn">__ICON_PLUS__ إضافة إعلان</button>
+        </div>
+        <p style="margin-top:-8px;">تُعرض هذه الإعلانات في الشريط المتحرك أعلى الصفحة الرئيسية.</p>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th>صورة الإعلان</th><th>رابط التوجيه</th><th>الترتيب</th><th>إجراءات</th></tr></thead>
+            <tbody id="adsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- Orders panel ---- -->
+    <section class="admin-panel-view" id="panel-orders" style="display:none;">
+      <div class="admin-panel">
+        <div class="panel-head"><h3 style="margin:0;">سجلّ الطلبات</h3></div>
+        <p style="margin-top:-8px;">هذا سجلّ استرشادي فقط لكل طلب تم فتحه عبر واتساب من الموقع — إتمام الطلب الفعلي يجري عبر محادثة واتساب مباشرة.</p>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>الزبون / العنوان</th>
+                <th>النوع</th>
+                <th>المنتجات</th>
+                <th>الإجمالي</th>
+                <th>حالة الطلب</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody2"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- Out of Stock panel ---- -->
+    <section class="admin-panel-view" id="panel-outofstock" style="display:none;">
+      <div class="admin-panel">
+        <div class="panel-head">
+          <h3 style="margin:0;">المنتجات التي نفذت من المتجر <span class="pill pill-off" id="oosCount">0</span></h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="oosSearch" placeholder="بحث بالاسم أو الباركود..." style="padding:9px 14px;border-radius:999px;border:1px solid var(--line-strong);font-family:inherit;">
+            <select id="oosReason" style="padding:9px 14px;border-radius:999px;border:1px solid var(--line-strong);font-family:inherit;background:var(--surface);">
+              <option value="">كل الحالات</option>
+              <option value="stock">نفدت الكمية</option>
+              <option value="hidden">مخفي يدوياً (غير متاح)</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-hint" style="margin-bottom:10px;">يظهر هنا كل منتج لا يظهر للزبون كمتوفر: إما نفدت كميته (0)، أو أُوقف يدوياً من خيار «متاح». اضغط «تعديل» لتحديث الكمية أو إعادة إتاحته.</div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th>الصورة</th><th>الباركود</th><th>الاسم</th><th>القسم</th><th>السعر</th><th>السبب</th><th>إجراءات</th></tr></thead>
+            <tbody id="oosTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- Settings panel ---- -->
+    <section class="admin-panel-view" id="panel-settings" style="display:none;">
+      <div class="admin-panel" style="max-width:640px;">
+        <div class="panel-head"><h3 style="margin:0;">إعدادات المتجر</h3></div>
+        <form id="settingsForm">
+          <div class="field"><label>اسم المتجر</label><input name="storeName" required></div>
+          <div class="field"><label>الشعار النصي (Tagline)</label><input name="storeTagline"></div>
+          <div class="field"><label>وصف المتجر</label><textarea name="storeDescription"></textarea></div>
+          <div class="field"><label>رقم واتساب (بصيغة دولية بدون +)</label><input name="whatsapp" placeholder="9647xxxxxxxxx"></div>
+          <div class="field"><label>رابط انستغرام</label><input name="instagram" placeholder="https://instagram.com/yourstore"></div>
+          <div class="field"><label>رابط تيك توك</label><input name="tiktok" placeholder="https://www.tiktok.com/@yourstore"></div>
+          <div class="field"><label>رقم الهاتف</label><input name="phone"></div>
+          <div class="field"><label>رقم هاتف ثاني (اختياري)</label><input name="phone2"></div>
+          <div class="field"><label>العنوان</label><input name="address" placeholder="مثال: كربلاء - حي الأطباء"></div>
+          <div class="field"><label>رابط الموقع على الخرائط (اختياري)</label><input name="mapUrl" dir="ltr" placeholder="https://maps.app.goo.gl/..."><div class="field-hint">افتح المكان في خرائط جوجل ← مشاركة ← نسخ الرابط، ثم الصقه هنا. يصبح العنوان قابلاً للضغط ويفتح الخرائط مباشرة.</div></div>
+          <div class="field"><label>ساعات العمل</label><input name="workingHours"></div>
+          <div class="field"><label>معلومات التوصيل</label><textarea name="deliveryInfo"></textarea></div>
+          <div class="field"><label>رمز العملة</label><input name="currencySymbol"></div>
+
+          <hr style="border:none;border-top:1px solid var(--line);margin:22px 0;">
+          <div class="field-hint"></div>
+
+          <button type="submit" class="btn btn-primary btn-block">حفظ الإعدادات</button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ Product modal ============ -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal-card" style="max-width: 90vw; width: 500px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-head">
+      <h3 id="productModalTitle" style="margin:0;">إضافة منتج</h3>
+      <button class="close-modal" id="closeProductModal">__ICON_CLOSE__</button>
+    </div>
+    <form id="productForm">
+      <div class="field">
+        <label style="display:flex; justify-content:space-between; align-items:center;">
+          صورة المنتج 
+          <button type="button" id="removeProductImageBtn" class="btn-icon btn-sm" style="color:var(--error);" title="مسح الصورة">__ICON_TRASH__</button>
+        </label>
+        <div class="image-upload">
+          <div class="preview" id="productImagePreview"></div>
+          <input type="file" id="productImageInput" accept="image/*">
+        </div>
+      </div>
+      
+      <div class="field">
+        <label>صور إضافية للمنتج (اختياري)</label>
+        <input type="file" id="productExtraImagesInput" accept="image/*" multiple>
+        <div id="extraImagesPreview" style="display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap;"></div>
+      </div>
+
+      <div class="field">
+        <label>الباركود / SKU (اختياري — للمزامنة مع نظام المحاسبة)</label>
+        <input type="text" id="productBarcode" placeholder="امسح بالباركود أو اكتب الكود هنا...">
+      </div>
+
+      <div class="field"><label>اسم المنتج</label><input type="text" id="productName" required></div>
+      
+      <div class="field">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label for="productDescription" style="margin: 0;">الوصف</label>
+          <button type="button" id="btnAiGenDesc" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 3px 8px; cursor: pointer; border-radius: var(--r-ctl);">
+            ✨ توليد بالذكاء الاصطناعي
+          </button>
+        </div>
+        <textarea id="productDescription" rows="3" placeholder="وصف المنتج، المزايا، الخامة..."></textarea>
+      </div>
+
+      <div class="field"><label>السعر (د.ع)</label><input type="number" id="productPrice" min="0" required></div>
+      <div class="field"><label>السعر القديم قبل الخصم (اختياري)</label><input type="number" id="productOldPrice" min="0" placeholder="يظهر مشطوباً بجانب السعر عند تفعيل «عرض خاص»"></div>
+      <div class="field"><label>القسم</label><select id="productCategorySelect" required></select></div>
+      
+      <div class="field">
+        <label style="display:flex;justify-content:space-between;align-items:center;">
+          الألوان (اختياري — مثال: منتجات الملابس)
+          <button type="button" id="addColorBtn" class="btn btn-outline btn-sm">+ إضافة لون</button>
+        </label>
+        <div id="colorsList" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+
+      <div class="field">
+        <label>الاحجام (اختياري) — افصل بينها بفاصلة</label>
+        <input type="text" id="productSizes" placeholder="مثال: S, M, L, XL">
+      </div>
+
+      <div class="field" id="inventoryWrap" style="display:none;">
+        <label>المخزون حسب اللون و الحجم</label>
+        <div id="inventoryGrid" style="overflow-x:auto;"></div>
+        <p class="field-hint">إجمالي المخزون أدناه يُحسب تلقائيًا من هذه الكميات.</p>
+      </div>
+
+      <div class="field" id="productStockWrap"><label id="productStockLabel">الكمية المتوفرة الكلية</label><input type="number" id="productStock" min="0" required></div>
+      <div class="field checkbox-row"><input type="checkbox" id="productAvailable"><label for="productAvailable" style="margin:0;">مفعّل / معروض في المتجر</label></div>
+      <div class="field checkbox-row"><input type="checkbox" id="productFeatured"><label for="productFeatured" style="margin:0;">منتج مميز</label></div>
+      <div class="field checkbox-row"><input type="checkbox" id="productNew"><label for="productNew" style="margin:0;">منتج جديد</label></div>
+      
+      <div class="field checkbox-row">
+        <input type="checkbox" id="productOffer">
+        <label for="productOffer" style="margin:0; color: var(--danger); font-weight: bold;">منتج عليه عرض خاص 🔥</label>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">حفظ المنتج</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============ Category modal ============ -->
+<div class="modal-overlay" id="categoryModal">
+  <div class="modal-card" style="max-width: 90vw; width: 500px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-head">
+      <h3 id="categoryModalTitle" style="margin:0;">إضافة قسم</h3>
+      <button class="close-modal" id="closeCategoryModal">__ICON_CLOSE__</button>
+    </div>
+    <form id="categoryForm">
+      <div class="field">
+        <label style="display:flex; justify-content:space-between; align-items:center;">
+          صورة القسم 
+          <button type="button" id="removeCategoryImageBtn" class="btn-icon btn-sm" style="color:var(--error);" title="مسح الصورة">__ICON_TRASH__</button>
+        </label>
+        <div class="image-upload">
+          <div class="preview" id="categoryImagePreview"></div>
+          <input type="file" id="categoryImageInput" accept="image/*">
+        </div>
+      </div>
+      <div class="field"><label>اسم القسم</label><input type="text" id="categoryName" required></div>
+      <div class="field">
+        <label>الأيقونة (تظهر عند عدم وجود صورة للقسم)</label>
+        <div id="categoryIconPicker" class="icon-picker"></div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">حفظ القسم</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============ Ad modal ============ -->
+<div class="modal-overlay" id="adModal">
+  <div class="modal-card" style="max-width: 90vw; width: 500px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-head">
+      <h3 id="adModalTitle" style="margin:0;">إضافة إعلان للسلايدر</h3>
+      <button class="close-modal" id="closeAdModal">__ICON_CLOSE__</button>
+    </div>
+    <form id="adForm">
+      <div class="field">
+        <label style="display:flex; justify-content:space-between; align-items:center;">
+          صورة الإعلان (يفضل أن تكون عرضية ومناسبة للموبايل)
+          <button type="button" id="removeAdImageBtn" class="btn-icon btn-sm" style="color:var(--error);" title="مسح الصورة">__ICON_TRASH__</button>
+        </label>
+        <div class="image-upload">
+          <div class="preview" id="adImagePreview" style="width: 140px; height: 70px; border-radius: 8px;"></div>
+          <input type="file" id="adImageInput" accept="image/*">
+        </div>
+      </div>
+      <div class="field">
+        <label>رابط التوجيه (اختياري)</label>
+        <input type="text" id="adLink" placeholder="مثال: https://... أو رابط منتج معين">
+        <div class="field-hint">سيتم توجيه الزبون لهذا الرابط عند الضغط على الإعلان.</div>
+      </div>
+      <div class="field">
+        <label>ترتيب العرض (رقم)</label>
+        <input type="number" id="adOrder" value="0">
+        <div class="field-hint">الأرقام الأصغر تُعرض أولاً (مثلاً: 1 يظهر قبل 2).</div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">حفظ الإعلان</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============ النافذة الموحدة لمعاينة ومراجعة البضائع المستوردة ============ -->
+<div class="modal-overlay" id="shelfScanModal" style="display:none;">
+  <div class="modal-card" style="max-width: 95vw; width: 920px; max-height: 92vh; overflow-y: auto;">
+    <div class="modal-head">
+      <h3 id="batchModalTitle" style="margin:0;">مراجعة وتأكيد البضائع المستخرجة 📦</h3>
+      <button class="close-modal" id="closeShelfScanModal">__ICON_CLOSE__</button>
+    </div>
+    
+    <!-- شريط التحكم السريع في عناصر المعاينة -->
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin:12px 0 6px 0; background:var(--olive-50); padding:10px 14px; border-radius:8px; border:1px solid var(--line);">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <label style="display:flex; align-items:center; gap:6px; font-weight:600; font-size:0.88rem; cursor:pointer; margin:0;">
+          <input type="checkbox" id="batchSelectAll" checked>
+          <span>تحديد الكل</span>
+        </label>
+        <span id="shelfScanStatus" style="font-size:0.85rem; color:var(--ink-400);"></span>
+      </div>
+    </div>
+
+    <!-- شبكة بطاقات المنتجات المعاينة -->
+    <div id="shelfDetectedList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:14px; margin:15px 0;"></div>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--line); padding-top:15px; margin-top:10px; flex-wrap:wrap; gap:10px;">
+      <span id="batchSelectedCounter" style="font-size:0.88rem; font-weight:bold; color:var(--primary);"></span>
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="btn btn-outline btn-sm" id="btnCancelShelfScan">إلغاء</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnSaveShelfProducts">حفظ المنتجات المحددة في المتجر</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- مكتبة SheetJS لقراءة وتفكيك ملفات Excel و CSV مباشرة في المتصفح -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script src="js/icons.js?v=93"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="js/store.js?v=93"></script>
+<script src="js/whatsapp.js?v=93"></script>
+<script src="js/app.js?v=93"></script>
+<script src="js/auth.js?v=93"></script>
+<script src="js/ai.js?v=93"></script>
+<script src="js/admin.js?v=93"></script>
+<script>
+  // تعبئة الأيقونات الثابتة
+  document.querySelector(".admin-nav").innerHTML = document.querySelector(".admin-nav").innerHTML
+    .replace("__ICON_GAUGE__", iconSvg("gauge"))
+    .replace("__ICON_BOX__", iconSvg("box"))
+    .replace("__ICON_LAYERS__", iconSvg("layers"))
+    .replace("__ICON_ALERT__", iconSvg("alert"))
+    .replace("__ICON_IMAGE__", iconSvg("image"))
+    .replace("__ICON_CART__", iconSvg("cart"))
+    .replace("__ICON_SETTINGS__", iconSvg("settings"));
+
+  document.querySelector(".admin-logout").innerHTML = document.querySelector(".admin-logout").innerHTML
+    .replace("__ICON_HOME__", iconSvg("home"))
+    .replace("__ICON_LOGOUT__", iconSvg("logout"));
+
+  document.getElementById("adminSidebarToggle").innerHTML = iconSvg("menu");
+  
+  const closeSidebarBtn = document.querySelector(".admin-close-sidebar");
+  if (closeSidebarBtn) {
+    closeSidebarBtn.innerHTML = iconSvg("close");
+  }
+
+  document.getElementById("addProductBtn").innerHTML = iconSvg("plus") + " إضافة منتج";
+  document.getElementById("addCategoryBtn").innerHTML = iconSvg("plus") + " إضافة قسم";
+  document.getElementById("closeProductModal").innerHTML = iconSvg("close");
+  document.getElementById("closeCategoryModal").innerHTML = iconSvg("close");
+  
+  document.getElementById("addAdBtn").innerHTML = iconSvg("plus") + " إضافة إعلان";
+  document.getElementById("closeAdModal").innerHTML = iconSvg("close");
+  
+  if (document.getElementById("closeShelfScanModal")) {
+    document.getElementById("closeShelfScanModal").innerHTML = iconSvg("close");
+  }
+  
+  if(document.getElementById("removeProductImageBtn")) {
+      document.getElementById("removeProductImageBtn").innerHTML = iconSvg("trash");
+  }
+  if(document.getElementById("removeCategoryImageBtn")) {
+      document.getElementById("removeCategoryImageBtn").innerHTML = iconSvg("trash");
+  }
+  if(document.getElementById("removeAdImageBtn")) {
+      document.getElementById("removeAdImageBtn").innerHTML = iconSvg("trash");
+  }
+</script>
+</body>
+</html>

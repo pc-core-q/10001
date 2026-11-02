@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>المنتجات | {{storeName}}</title>
+<link rel="stylesheet" href="css/style.css?v=93">
+  <link rel="stylesheet" href="css/refresh.css?v=93">
+  <script src="js/config.js?v=93"></script>
+  <script src="js/themes.js?v=93"></script>
+  <script src="js/boot.js?v=93"></script>
+</head>
+<body>
+
+<div id="site-header" data-active="products"></div>
+
+<main>
+  <section class="page-header">
+    <div class="container">
+      <div class="breadcrumb"><a href="index.html">الرئيسية</a> / المنتجات</div>
+      <h1>جميع المنتجات</h1>
+      <p>تصفح تشكيلتنا المميزة واختر ما يناسبك واطلب مباشرة عبر واتساب.</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:20px;">
+    <div class="container">
+      <div class="shop-controls" style="margin-bottom:15px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+        <div class="search-box" style="flex:1;min-width:240px;position:relative;">
+          <input type="text" id="searchInput" placeholder="ابحث باسم المنتج أو الوصف…" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);font-family:var(--font-body);">
+        </div>
+        <div class="sort-box" style="min-width:180px;">
+          <select id="sortSelect" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;font-family:var(--font-body);">
+            <option value="default">الترتيب الافتراضي</option>
+            <option value="price-asc">السعر: من الأقل للأعلى</option>
+            <option value="price-desc">السعر: من الأعلى للأقل</option>
+            <option value="name">الاسم: أ - ي</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="shop-cat-tabs-wrap" id="filterCategories"></div>
+
+      <div style="margin-bottom:15px;font-size:0.9rem;color:var(--ink-500);" id="resultCount">جاري التحميل…</div>
+
+      <div class="product-grid" id="shopGrid"></div>
+    </div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+
+<!-- سكربتات مؤجلة (defer): لا تحجب الرسم. القراءة من Firebase عبر REST داخل store.js (بدون SDK) -->
+<script src="js/icons.js?v=93" defer></script>
+<script src="js/store.js?v=93" defer></script>
+<script src="js/whatsapp.js?v=93" defer></script>
+<script src="js/app.js?v=93" defer></script>
+<script src="js/products.js?v=93" defer></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-no-analytics>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>تسجيل دخول الأدمن | {{storeName}}</title>
+<link rel="stylesheet" href="css/style.css?v=93">
+  <script src="js/config.js?v=93"></script>
+  <script src="js/themes.js?v=93"></script>
+  <script src="js/boot.js?v=93"></script>
+</head>
+<body>
+
+<div id="site-header" data-active=""></div>
+
+<main>
+  <section class="section" style="padding-top:60px;">
+    <div class="container">
+      <div class="form-card">
+        <div style="text-align:center;margin-bottom:20px;">
+          <img data-logo src="assets/logo/logo.png" alt="شعار المتجر" style="width:64px;height:64px;border-radius:50%;margin-inline:auto;margin-bottom:12px;">
+          <h2 style="margin-bottom:4px;">تسجيل دخول الأدمن</h2>
+          <p style="margin:0;font-size:.9rem;">هذه الصفحة مخصصة لإدارة المتجر فقط</p>
+        </div>
+
+        <div id="loginError" class="form-error"></div>
+
+        <form id="loginForm">
+          <div class="field">
+            <label for="loginEmail">البريد الإلكتروني</label>
+            <input type="email" id="loginEmail" required autocomplete="username" inputmode="email">
+          </div>
+          <div class="field">
+            <label for="loginPassword">كلمة المرور</label>
+            <input type="password" id="loginPassword" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">دخول</button>
+        </form>
+
+        <p style="text-align:center;margin-top:18px;font-size:.85rem;">
+          <a href="index.html">العودة إلى المتجر</a>
+        </p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="js/icons.js?v=93"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="js/store.js?v=93"></script>
+<script src="js/whatsapp.js?v=93"></script>
+<script src="js/app.js?v=93"></script>
+<script src="js/auth.js?v=93"></script>
+</body>
+</html>

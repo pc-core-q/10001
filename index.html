@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-early-fetch>
+<head>
+
+  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>{{storeName}} | {{storeTagline}}</title>
+  <meta name="description" content="{{storeDescription}}">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="{{siteUrl}}/">
+  <meta property="og:locale" content="ar_AR">
+  <meta property="og:site_name" content="{{storeName}}">
+  <meta property="og:title" content="{{storeName}} | {{storeTagline}}">
+  <meta property="og:description" content="{{storeDescription}}">
+  <meta property="og:image" content="{{logoUrl}}">
+  <meta property="og:image:alt" content="شعار المتجر">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{storeName}} | {{storeTagline}}">
+  <meta name="twitter:description" content="{{storeDescription}}">
+  <meta name="twitter:image" content="{{logoUrl}}">
+
+
+
+  <link rel="stylesheet" href="css/style.css?v=93">
+  <link rel="stylesheet" href="css/refresh.css?v=93">
+
+
+  <script type="speculationrules">{"prefetch":[{"where":{"href_matches":"/*"},"eagerness":"moderate"}]}</script>
+  <script src="js/config.js?v=93"></script>
+  <script src="js/themes.js?v=93"></script>
+  <script src="js/boot.js?v=93"></script>
+</head>
+<body>
+
+<div id="site-header" data-active="home"></div>
+
+<main>
+  <section class="hero">
+    <div class="hero-blob"></div>
+    <div class="container hero-inner">
+      <div class="hero-copy">
+        <div class="hero-eyebrow-free">✨ كل ما تحتاجه في مكان واحد</div>
+        <h1>تسوّق أفضل المنتجات بسهولة وثقة</h1>
+        <p>مجموعة مختارة بعناية، وطلب سهل ومباشر عبر واتساب دون أي تعقيد.</p>
+        <div class="hero-cta">
+          <a href="products.html" class="btn btn-primary">تسوق الآن</a>
+          <a href="#categories" class="btn btn-outline">تصفح الأقسام</a>
+        </div>
+        <div class="hero-trust">
+          <div><strong>جودة</strong><span>منتجات مختارة</span></div>
+          <div><strong>سرعة</strong><span>توصيل سريع</span></div>
+        </div>
+      </div>
+      <div class="hero-art" id="heroPromoContainer">
+        <div class="hero-art-default"><img src="assets/logo/logo.png?v=93" alt="شعار المتجر" width="160" height="160" fetchpriority="high" decoding="async"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-categories-highlight" id="categories">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <span class="section-tag" style="display:inline-block; margin-bottom:6px; font-weight:700; color:var(--sand-500, #b4883a); font-size:0.9rem;">✨ تصفح التشكيلات</span>
+          <h2>أقسام المتجر الرئيسية</h2>
+          <p>اختر القسم المناسب لتصل لما تبحث عنه بدقة وسرعة.</p>
+        </div>
+        <a href="categories.html" class="btn btn-outline btn-sm">عرض كل الأقسام ←</a>
+      </div>
+      <div class="cat-scroller" id="homeCategories" aria-busy="true"><div class="cat-chip skeleton-chip" aria-hidden="true"><span class="cat-icon"></span><span class="name"></span></div><div class="cat-chip skeleton-chip" aria-hidden="true"><span class="cat-icon"></span><span class="name"></span></div><div class="cat-chip skeleton-chip" aria-hidden="true"><span class="cat-icon"></span><span class="name"></span></div><div class="cat-chip skeleton-chip" aria-hidden="true"><span class="cat-icon"></span><span class="name"></span></div><div class="cat-chip skeleton-chip" aria-hidden="true"><span class="cat-icon"></span><span class="name"></span></div></div>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>منتجات مميزة</h2>
+          <p>الأكثر طلبًا من عملائنا هذا الشهر.</p>
+        </div>
+        <a href="products.html?filter=featured" class="btn btn-outline btn-sm">عرض الكل</a>
+      </div>
+      <div class="product-grid" id="featuredGrid">
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>🔥 عروض خاصة</h2>
+          <p>تخفيضات وأسعار مميزة لفترة محدودة، لا تفوتها!</p>
+        </div>
+        <a href="products.html?filter=offer" class="btn btn-outline btn-sm">عرض الكل</a>
+      </div>
+      <div class="product-grid" id="offerGrid">
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>وصل حديثًا</h2>
+          <p>أحدث الإضافات إلى المتجر.</p>
+        </div>
+        <a href="products.html?filter=new" class="btn btn-outline btn-sm">عرض الكل</a>
+      </div>
+      <div class="product-grid" id="newGrid">
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+        <article class="product-card skeleton-card" aria-hidden="true"></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>لماذا تختار متجرنا؟</h2>
+          <p>نهتم بتفاصيل تجربتك في كل طلب.</p>
+        </div>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2.5 6h11v10h-11z"/><path d="M13.5 10h4l3 3v3h-7z"/><circle cx="6.5" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div>
+          <h3>توصيل سريع وموثوق</h3>
+          <p>توصيل سريع داخل المدينة، وخلال أيام قليلة لباقي المناطق.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3.5 19 6v6c0 5-3 7.8-7 8.5-4-.7-7-3.5-7-8.5V6l7-2.5Z"/><path d="m9 12 2 2 4-4.2"/></svg></div>
+          <h3>منتجات أصلية</h3>
+          <p>نختار منتجاتنا بعناية من مصادر موثوقة لضمان الجودة والسلامة.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.5 0-10 4.5-10 10 0 1.8.47 3.45 1.29 4.9L2 22l5.25-1.38A9.94 9.94 0 0 0 12.04 22c5.5 0 10-4.5 10-10s-4.5-10-10-10Zm5.8 14.2c-.24.68-1.4 1.3-1.94 1.38-.5.08-1.13.11-1.82-.11-.42-.13-.96-.31-1.65-.6-2.9-1.25-4.8-4.16-4.94-4.35-.14-.19-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.27-.29.58-.36.78-.36h.56c.18 0 .42-.07.65.5.24.58.8 2 .87 2.15.07.15.12.32.02.51-.1.19-.15.31-.3.48-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.29.76 1.25 1.63 2.02 1.12.99 2.06 1.3 2.35 1.45.29.15.46.13.63-.08.17-.21.72-.84.92-1.13.19-.29.39-.24.65-.14.27.1 1.7.8 1.99.95.29.15.48.22.55.34.07.13.07.71-.17 1.4Z"/></svg></div>
+          <h3>طلب سهل عبر واتساب</h3>
+          <p>لا تعقيد في الدفع الإلكتروني — أرسل طلبك وتواصل مباشرة معنا.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20s-7.3-4.6-9.4-9.2C1.2 7.6 3 4.5 6.2 4.1c2-.3 3.8.7 5.8 3 2-2.3 3.8-3.3 5.8-3 3.2.4 5 3.5 3.6 6.7C19.3 15.4 12 20 12 20Z"/></svg></div>
+          <h3>دعم يهتم بك</h3>
+          <p>فريقنا جاهز للمساعدة في اختيار المنتج الأنسب لك.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container">
+      <div class="contact-band" id="contactBand">
+        <div>
+          <h2>لديك استفسار؟ تواصل معنا مباشرة</h2>
+          <p>فريقنا متاح يوميًا للرد على استفساراتك ومساعدتك في اختيار المنتج المناسب.</p>
+        </div>
+        <div class="social-row" id="homeSocialRow" style="flex-wrap: wrap; justify-content: center; gap: 10px;"></div>
+      </div>
+    </div>
+  </section>
+</main>
+  
+<div id="site-footer"></div>
+
+<script src="js/icons.js?v=93" defer></script>
+<script src="js/store.js?v=93" defer></script>
+<script src="js/whatsapp.js?v=93" defer></script>
+<script src="js/app.js?v=93" defer></script>
+<script>
+  var slideInterval = null;
+  var HOME_SECTIONS = [
+    { grid: "featuredGrid", field: "featured", cache: "featured", empty: "لا توجد منتجات مميزة حاليًا." },
+    { grid: "offerGrid",    field: "isOffer",  cache: "offers",   empty: "لا توجد عروض وتخفيضات حاليًا." },
+    { grid: "newGrid",      field: "isNew",    cache: "new",      empty: "لا توجد منتجات جديدة حاليًا." }
+  ];
+  var paintedSigs = {};
+
+  function productMediaHtml(product) {
+    if (product.image) {
+      var imgUrl = window.getIkUrl(product.image, 600, 80);
+      return '<img src="' + escapeHtml(imgUrl) + '" ' +
+             'alt="' + escapeHtml(product.name || "") + '" ' +
+             'class="product-media-img img-fade" loading="lazy" decoding="async" ' +
+             'onload="this.classList.add(\'is-loaded\')" ' +
+             'onerror="this.onerror=null; this.classList.add(\'is-loaded\'); this.src=window.IMG_PLACEHOLDER;">';
+    }
+    var cat = Store.getCategories().find(function (c) { return c.id === product.categoryId; });
+    return '<div class="placeholder-icon">' + iconSvg(cat ? cat.icon : "box") + "</div>";
+  }
+
+  function productHasOptions(product) {
+    if (!product) return false;
+    return (Array.isArray(product.colors) && product.colors.length > 0) ||
+           (Array.isArray(product.sizes) && product.sizes.length > 0) ||
+           (Array.isArray(product.variants) && product.variants.length > 0) ||
+           Store.hasVariantMatrix(product);
+  }
+
+  var OPTIONS_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:block;margin:auto;"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>';
+
+  function renderHomeProductCard(product) {
+    var outOfStock = !Store.isProductAvailable(product);
+    var badges = [];
+
+    if (product.isOffer) badges.push('<span class="badge badge-offer">عرض🔥</span>');
+    else if (product.isNew) badges.push('<span class="badge badge-new">جديد</span>');
+    else if (product.featured) badges.push('<span class="badge badge-featured">مميز</span>');
+    if (outOfStock) badges.push('<span class="badge badge-out-abs">غير متوفر</span>');
+
+    var colorsHtml = "";
+    if (product.colors && product.colors.length > 0) {
+      var maxShow = 4;
+      var remaining = product.colors.length - maxShow;
+      var dots = product.colors.slice(0, maxShow).map(function (c) {
+        return '<span class="card-color-dot" style="background:' + escapeHtml(c.hex || "#ccc") + ';" title="' + escapeHtml(c.name || "") + '"></span>';
+      }).join("");
+      if (remaining > 0) dots += '<span class="card-color-more">+' + remaining + '</span>';
+      colorsHtml = '<div class="product-body-colors">' + dots + '</div>';
+    } else {
+      var optionsCount = (product.variants && product.variants.length) || 0;
+      if (optionsCount > 1) badges.push('<span class="badge badge-variants">' + iconSvg("layers") + optionsCount + ' خيارات</span>');
+    }
+
+    var hasOptions = productHasOptions(product);
+    var actionIcon = hasOptions ? OPTIONS_ICON : iconSvg("cart");
+    var actionTitle = outOfStock ? "غير متوفر" : (hasOptions ? "اختر الخيارات والمواصفات" : "أضف للسلة");
+    var actionLabel = outOfStock ? "غير متوفر" : (hasOptions ? "اختر الخيارات" : "أضف للسلة");
+    var href = 'product.html?id=' + encodeURIComponent(product.id);
+
+    return (
+      '<article class="product-card">' +
+        '<a href="' + href + '" class="product-media">' + productMediaHtml(product) + badges.join("") + '</a>' +
+        '<div class="product-body">' +
+          '<span class="product-cat">' + escapeHtml(Store.getCategoryName(product.categoryId)) + "</span>" +
+          '<h3 class="product-name"><a href="' + href + '">' + escapeHtml(product.name) + "</a></h3>" +
+          colorsHtml +
+          '<div class="product-foot">' +
+            '<span class="price">' + priceHtml(product) + "</span>" +
+            '<div class="product-actions">' +
+              '<button class="btn btn-primary" ' + (outOfStock ? "disabled" : "") +
+                ' title="' + actionTitle + '" onclick="quickAddToCart(' + jsStr(product.id) + ')">' +
+                actionIcon + '<span class="btn-label">' + actionLabel + "</span>" +
+              "</button>" +
+            "</div>" +
+          "</div>" +
+        "</div>" +
+      '</article>'
+    );
+  }
+
+  async function quickAddToCart(productId) {
+    var product = Store.getProduct(productId) || await Store.loadProductById(productId);
+    if (!product || !Store.isProductAvailable(product)) return;
+
+    if (productHasOptions(product)) {
+      window.location.href = 'product.html?id=' + encodeURIComponent(productId);
+      return;
+    }
+    var res = Store.addToCart(productId, 1);
+    if (res && res.capped) showToast("وصلت للحد الأقصى المتوفر من هذا المنتج", "error");
+    else showToast(product.name + " أُضيف إلى السلة", "success");
+    window.updateCartBadge();
+  }
+
+  function renderGridInto(containerId, products, emptyMessage) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    el.removeAttribute("aria-busy");
+    if (!products || !products.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:20px;text-align:center;width:100%;flex:0 0 100%;color:var(--ink-400);">' + iconSvg("box") + "<p>" + (emptyMessage || "لا توجد منتجات لعرضها حاليًا.") + "</p></div>";
+      return;
+    }
+    el.innerHTML = products.map(renderHomeProductCard).join("");
+  }
+
+  function listSig(list) {
+    return (list || []).map(function (p) {
+      return [
+        p.id, p.name, p.price, p.oldPrice, p.image, p.categoryId,
+        Store.getCategoryName(p.categoryId),
+        p.available, p.isOffer, p.isNew, p.featured,
+        Store.getTotalStock(p),
+        (p.colors || []).length, (p.sizes || []).length
+      ].join("~");
+    }).join("|");
+  }
+
+  function getSectionFromIndex(field) {
+    if (typeof Store.getIndexItems !== "function" || typeof Store.hasIndexLocal !== "function" || !Store.hasIndexLocal()) {
+      return null;
+    }
+    var items = Store.getIndexItems() || [];
+    var out = [];
+    for (var i = 0; i < items.length && out.length < 4; i++) {   // خروج مبكر عند 4 منتجات
+      var p = items[i];
+      if (p && p[field] && Store.isProductAvailable(p)) out.push(p);
+    }
+    return out;
+  }
+
+  function renderSectionError(sec) {
+    var el = document.getElementById(sec.grid);
+    if (!el) return;
+    el.removeAttribute("aria-busy");
+    el.innerHTML = '<div class="load-error" style="flex:0 0 100%;width:100%;"><p>تعذّر تحميل المنتجات. تحقق من الاتصال بالإنترنت.</p>' +
+      '<button type="button" class="btn btn-outline btn-sm">إعادة المحاولة</button></div>';
+    el.querySelector("button").addEventListener("click", function () {
+      el.setAttribute("aria-busy", "true");
+      el.innerHTML = '<article class="product-card skeleton-card" aria-hidden="true"></article>'.repeat(4);
+      loadHomeSection(sec);
+    });
+  }
+
+  function paintSectionIfChanged(sec, list, allowEmpty) {
+    var sig = (list && list.length) ? listSig(list) : "__EMPTY__";
+    if (!allowEmpty && sig === "__EMPTY__") return;
+    if (paintedSigs[sec.grid] === sig) return;
+    paintedSigs[sec.grid] = sig;
+    renderGridInto(sec.grid, list, sec.empty);
+  }
+
+  function loadHomeSection(sec) {
+    var cached = Store.getFieldCache(sec.cache).slice(0, 4);
+    if (cached.length) {
+      paintSectionIfChanged(sec, cached, false);
+    }
+
+    // الاعتماد على الفهرس المحلي فوراً إذا كان موجوداً لمنع أي استعلامات سيرفر إضافية
+    if (typeof Store.hasIndexLocal === "function" && Store.hasIndexLocal()) {
+      var idxList = getSectionFromIndex(sec.field);
+      if (idxList && idxList.length) {
+        Store.setFieldCache(sec.cache, idxList);
+        paintSectionIfChanged(sec, idxList, true);
+        return Promise.resolve();
+      }
+    }
+
+    return Store.loadProductsPageByField(sec.field, true, 4, null).then(function (res) {
+      var list = (res && res.products || []).filter(function (p) { return Store.isProductAvailable(p); }).slice(0, 4);
+      if (!list.length) {
+        var idxList = getSectionFromIndex(sec.field);
+        if (idxList && idxList.length) list = idxList;
+      }
+      Store.setFieldCache(sec.cache, list);
+      paintSectionIfChanged(sec, list, true);
+    }).catch(function (err) {
+      console.error("Home section error (" + sec.field + "):", err);
+      var idxList = getSectionFromIndex(sec.field);
+      if (idxList) {
+        Store.setFieldCache(sec.cache, idxList);
+        paintSectionIfChanged(sec, idxList, true);
+      } else if (!paintedSigs[sec.grid]) {
+        renderSectionError(sec);
+      }
+    });
+  }
+
+  function syncSectionsFromFreshIndex() {
+    if (typeof Store.hasIndexLocal !== "function" || !Store.hasIndexLocal()) return;
+    HOME_SECTIONS.forEach(function (sec) {
+      var idxList = getSectionFromIndex(sec.field);
+      if (idxList) {
+        Store.setFieldCache(sec.cache, idxList);
+        paintSectionIfChanged(sec, idxList, true);
+      }
+    });
+  }
+
+  var catSig = null;
+  function renderHomeCategories() {
+    var el = document.getElementById("homeCategories");
+    if (!el) return;
+    var cats = Store.getCategories().filter(function (c) { return !c.parentId; });
+
+    if (!cats.length && !LS.get("last_meta_pull_time")) return;
+
+    var sig = JSON.stringify(cats.map(function (c) { return [c.id, c.name, c.image, c.icon]; }));
+    if (sig === catSig) return;
+    catSig = sig;
+    el.removeAttribute("aria-busy");
+
+    if (!cats.length) {
+      el.innerHTML = '<div class="empty-state" style="width:100%;padding:16px;text-align:center;color:var(--ink-400);"><p>لا توجد أقسام مضافة بعد.</p></div>';
+      return;
+    }
+    el.innerHTML = cats.map(function (c) {
+      var media = c.image
+        ? '<img src="' + escapeHtml(window.getIkUrl(c.image, 160, 70)) + '" alt="" width="80" height="80" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;border-radius:50%;background:var(--surface-2);">'
+        : iconSvg(c.icon || "box");
+      return '<a href="products.html?cat=' + encodeURIComponent(c.id) + '" class="cat-chip"><span class="cat-icon" style="padding:0;overflow:hidden;display:flex;align-items:center;justify-content:center;">' + media + '</span><span class="name">' + escapeHtml(c.name) + "</span></a>";
+    }).join("");
+  }
+
+  function renderHomeSocial() {
+    var homeSocial = document.getElementById("homeSocialRow");
+    if (!homeSocial) return;
+    var s = Store.getSettings();
+    var html = "";
+    if (s.whatsapp) html += '<a href="https://wa.me/' + whatsappDigitsOnly(s.whatsapp) + '" target="_blank" rel="noopener">' + iconSvg("whatsapp") + "واتساب</a>";
+    if (s.instagram) html += '<a href="' + escapeHtml(safeUrl(s.instagram)) + '" target="_blank" rel="noopener">' + iconSvg("instagram") + 'انستقرام</a>';
+    if (s.tiktok) html += '<a href="' + escapeHtml(safeUrl(s.tiktok)) + '" target="_blank" rel="noopener">' + iconSvg("tiktok") + 'تيك توك</a>';
+    homeSocial.innerHTML = html || '<span style="opacity:.6;">لم يتم إعداد روابط التواصل بعد.</span>';
+  }
+
+  var adsSig = null;
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var sliderCtl = { start: function () {}, stop: function () {} };
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) sliderCtl.stop(); else sliderCtl.start();
+  });
+
+  function renderAdsSlider() {
+    var adminAds = Store.getAds();
+    var codeAds = (typeof CODE_ADS !== "undefined") ? CODE_ADS : [];
+    var ads = adminAds.concat(codeAds).filter(function (a) { return a && a.image; })
+      .sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+    var heroArt = document.getElementById("heroPromoContainer");
+    if (!heroArt) return;
+
+    var sig = JSON.stringify(ads.map(function (a) { return [a.image, a.link, a.order]; }));
+    if (sig === adsSig) return;
+    var hadSlider = adsSig !== null && adsSig !== "[]";
+    adsSig = sig;
+
+    sliderCtl.stop();
+    sliderCtl = { start: function () {}, stop: function () {} };
+    clearInterval(slideInterval);
+
+    if (!ads.length) {
+      if (hadSlider) heroArt.innerHTML = '<div class="hero-art-default"><img src="assets/logo/logo.png?v=93" alt="شعار المتجر" width="160" height="160" decoding="async"></div>';
+      return;
+    }
+
+    var trackHtml = '<div class="promo-slider-container"><div class="promo-slider-track" id="promoTrack">';
+    var dotsHtml = ads.length > 1 ? '<div class="promo-dots">' : '';
+    ads.forEach(function (ad, index) {
+      var img = '<img src="' + escapeHtml(window.getIkUrl(ad.image, 900, 80)) + '" alt="إعلان ' + (index + 1) + '" width="800" height="600" ' +
+                'class="img-fade" decoding="async" ' + (index === 0 ? 'fetchpriority="high"' : 'loading="lazy"') +
+                ' onload="this.classList.add(\'is-loaded\')" onerror="this.classList.add(\'is-loaded\')">';
+      var wrapped = ad.link
+        ? '<a href="' + escapeHtml(safeUrl(ad.link)) + '" target="_blank" rel="noopener" style="display:block;width:100%;height:100%;">' + img + '</a>'
+        : img;
+      trackHtml += '<div class="promo-slide" data-index="' + index + '">' + wrapped + '</div>';
+      if (ads.length > 1) dotsHtml += '<div class="promo-dot ' + (index === 0 ? 'active' : '') + '" data-target="' + index + '" role="button" aria-label="الإعلان ' + (index + 1) + '"></div>';
+    });
+    heroArt.innerHTML = trackHtml + '</div>' + (ads.length > 1 ? dotsHtml + '</div>' : '') + '</div>';
+
+    if (ads.length < 2) return;
+
+    var track = document.getElementById("promoTrack");
+    var dots = heroArt.querySelectorAll(".promo-dot");
+    var currentIndex = 0;
+
+    function goToSlide(index) {
+      if (index < 0) index = ads.length - 1;
+      if (index >= ads.length) index = 0;
+      currentIndex = index;
+      track.style.transform = "translateX(" + (currentIndex * 100) + "%)";
+      dots.forEach(function (d, i) { d.classList.toggle("active", i === currentIndex); });
+    }
+    function stop() { clearInterval(slideInterval); slideInterval = null; }
+    function start() {
+      stop();
+      if (reduceMotion || document.hidden) return;
+      slideInterval = setInterval(function () { goToSlide(currentIndex + 1); }, 4000);
+    }
+    sliderCtl = { start: start, stop: stop };
+
+    dots.forEach(function (dot) {
+      dot.addEventListener("click", function () { stop(); goToSlide(parseInt(this.dataset.target, 10)); start(); });
+    });
+
+    var startX = 0;
+    track.addEventListener("touchstart", function (e) { stop(); startX = e.changedTouches[0].screenX; }, { passive: true });
+    track.addEventListener("touchend", function (e) {
+      var endX = e.changedTouches[0].screenX;
+      if (startX - endX > 50) goToSlide(currentIndex + 1); else if (endX - startX > 50) goToSlide(currentIndex - 1);
+      start();
+    }, { passive: true });
+
+    start();
+  }
+
+  function initHome() {
+    renderHomeSocial();
+    renderHomeCategories();
+    renderAdsSlider();
+    HOME_SECTIONS.forEach(loadHomeSection);
+
+    if (typeof Store !== "undefined" && typeof Store.ensureIndexFresh === "function") {
+      Store.ensureIndexFresh().then(function () {
+        syncSectionsFromFreshIndex();
+      }).catch(function () {});
+    }
+  }
+
+  function onStoreSynced() {
+    renderHomeSocial();
+    renderHomeCategories();
+    renderAdsSlider();
+    HOME_SECTIONS.forEach(function (sec) {
+      var cached = Store.getFieldCache(sec.cache).slice(0, 4);
+      if (cached.length) paintSectionIfChanged(sec, cached, false);
+    });
+    syncSectionsFromFreshIndex();
+  }
+
+  window.addEventListener("DOMContentLoaded", initHome);
+  document.addEventListener("store:synced", onStoreSynced);
+  window.addEventListener("store:synced", onStoreSynced);
+
+  document.addEventListener("store:sync-error", function () {
+    var el = document.getElementById("homeCategories");
+    if (el && el.getAttribute("aria-busy") === "true") {
+      el.removeAttribute("aria-busy");
+      el.innerHTML = '<div class="load-error" style="width:100%;"><p>تعذّر تحميل الأقسام. تحقق من الاتصال بالإنترنت.</p>' +
+        '<button type="button" class="btn btn-outline btn-sm" onclick="location.reload()">إعادة المحاولة</button></div>';
+    }
+  });
+</script>
+</body>
+</html>

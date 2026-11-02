@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>من نحن | {{storeName}}</title>
+<link rel="stylesheet" href="css/style.css?v=93">
+  <link rel="stylesheet" href="css/refresh.css?v=93">
+  <script src="js/config.js?v=93"></script>
+  <script src="js/themes.js?v=93"></script>
+  <script src="js/boot.js?v=93"></script>
+</head>
+<body>
+
+<div id="site-header" data-active="about"></div>
+
+<main>
+  <section class="page-header">
+    <div class="container">
+      <div class="breadcrumb"><a href="index.html">الرئيسية</a> / من نحن</div>
+      <h1>من نحن</h1>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:10px;">
+    <div class="container about-hero">
+      <div>
+        <h2 id="aboutStoreName">متجرك الإلكتروني</h2>
+        <p id="aboutDescription">متجر إلكتروني يقدّم منتجات مختارة بعناية.</p>
+        <p>بدأنا برغبة في تسهيل حصول عملائنا على منتجات موثوقة، بعيدًا عن التعقيد وبأسلوب طلب بسيط عبر واتساب.</p>
+      </div>
+      <div class="hero-art" style="max-width:360px;margin-inline-start:auto;">
+        <img data-logo src="assets/logo/logo.png" alt="شعار المتجر">
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>قيمنا</h2>
+          <p>هذه المبادئ توجّه كل قرار نتخذه في اختيار المنتجات وخدمة عملائنا.</p>
+        </div>
+      </div>
+      <div class="value-grid">
+        <div class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 4C10 4 4 10 4 18v2h2c8 0 14-6 14-16Z"/><path d="M8 20c2-4 6-8 12-11"/></svg></div>
+          <h3>جودة أولاً</h3>
+          <p>نختار منتجات آمنة وموثوقة تستحق ثقتك.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3.5 19 6v6c0 5-3 7.8-7 8.5-4-.7-7-3.5-7-8.5V6l7-2.5Z"/><path d="m9 12 2 2 4-4.2"/></svg></div>
+          <h3>ثقة وشفافية</h3>
+          <p>معلومات واضحة عن كل منتج، وأسعار ثابتة بدون رسوم مخفية.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20s-7.3-4.6-9.4-9.2C1.2 7.6 3 4.5 6.2 4.1c2-.3 3.8.7 5.8 3 2-2.3 3.8-3.3 5.8-3 3.2.4 5 3.5 3.6 6.7C19.3 15.4 12 20 12 20Z"/></svg></div>
+          <h3>اهتمام حقيقي</h3>
+          <p>فريقنا يسعده مساعدتك في اختيار المنتج الأنسب لك.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="contact-band" id="aboutContactBand">
+        <div>
+          <h2>تعرّف علينا أكثر عبر انستغرام</h2>
+          <p>نشارك يوميًا أحدث المنتجات والعروض.</p>
+        </div>
+        <div class="social-row" id="aboutSocialRow"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+
+<!-- سكربتات مؤجلة (defer): لا تحجب الرسم. القراءة من Firebase عبر REST داخل store.js (بدون SDK) -->
+<script src="js/icons.js?v=93" defer></script>
+<script src="js/store.js?v=93" defer></script>
+<script src="js/whatsapp.js?v=93" defer></script>
+<script src="js/app.js?v=93" defer></script>
+<script>
+  /* تُستدعى عند التحميل وعند وصول الإعدادات من Firebase (كانت تُرسم مرة واحدة فقط → بيانات ناقصة لأول زائر) */
+  function renderAboutPage() {
+    var s = Store.getSettings();
+    var nameEl = document.getElementById("aboutStoreName");
+    var descEl = document.getElementById("aboutDescription");
+    if (nameEl) nameEl.textContent = s.storeName || "";
+    if (descEl) descEl.textContent = s.storeDescription || "";
+
+    var html = "";
+    if (s.instagram) html += '<a href="' + escapeHtml(safeUrl(s.instagram)) + '" target="_blank" rel="noopener">' + iconSvg("instagram") + "انستغرام</a>";
+    if (s.whatsapp) html += '<a href="https://wa.me/' + whatsappDigitsOnly(s.whatsapp) + '" target="_blank" rel="noopener">' + iconSvg("whatsapp") + "واتساب</a>";
+    var row = document.getElementById("aboutSocialRow");
+    if (row) row.innerHTML = html || '<span style="opacity:.6;">لم يتم إعداد روابط التواصل بعد.</span>';
+  }
+  document.addEventListener("DOMContentLoaded", renderAboutPage);
+  document.addEventListener("store:synced", renderAboutPage);
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+/* ==========================================================================
+   refresh.css — storefront refinements for phones and tablets
+   --------------------------------------------------------------------------
+   Loads after style.css on every page except login.html.
+   style.css owns the design tokens and every component; this file only adds
+   layout behaviour that exists on the storefront alone (swipe rows, sticky
+   product action bar, compact mobile footer, touch-device tweaks).
+   Nothing here redefines a colour, radius or font: re-branding stays a
+   one-file job (theme in js/config.js).
+   ========================================================================== */
+
+/* ---- Touch devices: no hover "lift" (it sticks after a tap) ---- */
+@media(hover:none){
+  .product-card:hover,.cat-chip:hover{transform:none}
+  .product-card:hover .product-media>img{transform:none}
+}
+
+/* ---- Home: categories become an edge-to-edge swipe row on phones ---- */
+@media(max-width:767px){
+  .section-categories-highlight{padding:20px 0}
+  .cat-scroller{margin-inline:-16px;padding:6px 16px 14px;scroll-padding-inline:16px;gap:12px}
+  .cat-chip{flex-basis:120px;width:120px;min-height:156px;padding:14px 8px 12px}
+  .cat-chip .cat-icon{width:72px;height:72px;min-width:72px}
+  .cat-chip span.name{font-size:.86rem}
+}
+
+/* ---- Home: product rows swipe on phones, exactly two cards in view ---- */
+@media(max-width:767px){
+  #featuredGrid,#offerGrid,#newGrid{display:flex;overflow-x:auto;gap:10px;margin-inline:-16px;padding:6px 16px 12px;scroll-padding-inline:16px;scroll-snap-type:x mandatory;scrollbar-width:none}
+  #featuredGrid::-webkit-scrollbar,#offerGrid::-webkit-scrollbar,#newGrid::-webkit-scrollbar{display:none}
+  #featuredGrid>.product-card,#offerGrid>.product-card,#newGrid>.product-card,
+  #featuredGrid>.skeleton-card,#offerGrid>.skeleton-card,#newGrid>.skeleton-card{flex:0 0 calc(50% - 6px);width:calc(50% - 6px);max-width:calc(50% - 6px);scroll-snap-align:start}
+}
+
+/* ---- Product page: sticky action bar on phones and small tablets ---- */
+@media(max-width:900px){
+  .detail-actions{position:fixed;inset-inline:0;bottom:0;z-index:90;margin:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));flex-wrap:nowrap;background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -6px 20px rgba(var(--text-rgb),.08)}
+  .detail-actions .btn{flex:1;min-width:0;padding-inline:10px}
+  body:has(#detailActions){padding-bottom:84px}
+  body:has(#detailActions) .toast{bottom:92px}
+  body:has(#detailActions) #backToTopBtn{bottom:100px}
+}
+
+/* ---- Footer: compact two-column layout on phones ---- */
+@media(max-width:768px){
+  .site-footer .footer-grid{grid-template-columns:1fr 1fr;gap:16px 14px;padding:24px 0 16px}
+  .footer-grid>div:nth-child(1){grid-column:1/-1;padding-bottom:12px;border-bottom:1px solid rgba(var(--on-primary-rgb),.12)}
+  .footer-grid>div:nth-child(1) .footer-brand{margin-bottom:6px}
+  .footer-grid>div:nth-child(1) .footer-brand img{width:38px;height:38px;border-radius:10px}
+  .footer-grid>div:nth-child(1) p{margin:0;line-height:1.5}
+  .site-footer h4{font-size:.92rem;margin-bottom:8px}
+  .site-footer ul{gap:6px}
+  .site-footer li,.site-footer a{line-height:1.4}
+  .footer-grid>div:nth-child(4){grid-column:1/-1;padding-top:12px;border-top:1px solid rgba(var(--on-primary-rgb),.12)}
+  .footer-grid>div:nth-child(4) h4{margin-bottom:10px}
+  .footer-grid>div:nth-child(4) ul{display:flex;flex-wrap:wrap;gap:8px}
+  .footer-grid>div:nth-child(4) li{display:inline-flex;align-items:center;padding:5px 12px;border-radius:var(--radius-pill);background:rgba(var(--on-primary-rgb),.08);border:1px solid rgba(var(--on-primary-rgb),.16)}
+  .footer-grid>div:nth-child(4) li a{color:var(--on-primary-soft)}
+  .footer-bottom{padding:14px 0 24px;font-size:.75rem}
+}
+
+/* ---- Small phones ---- */
+@media(max-width:360px){
+  .product-actions .btn .btn-label{font-size:.76rem}
+}
+@media(max-width:650px){
+  #backToTopBtn{bottom:20px;right:16px}
+}
+
+/* ==========================================================================
+   Uniform product cards: the name and the category label are always ONE line
+   (cut with "…" at the end of the line) and the colour-dots row has a fixed
+   height, so every card has the same size whatever the name length or number
+   of colours. Scoped to .product-card so other pages are untouched.
+   ========================================================================== */
+.product-card .product-cat{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* الاسم: سطران على الشاشات العريضة (768px فأكثر) وسطر واحد على الضيقة، ويُقطع بـ «…» بعدهما.
+   min-height يحجز سطرين دائماً فيبقى ارتفاع كل البطاقات واحداً حتى لو كان الاسم قصيراً. */
+.product-card .product-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow:hidden;text-overflow:ellipsis;min-width:0;line-height:1.5;min-height:3em;overflow-wrap:anywhere;unicode-bidi:plaintext;text-align:right}
+/* unicode-bidi:plaintext = كل اسم يُقطع عند نهاية سطره (عربي أو لاتيني) مع بقاء المحاذاة لليمين */
+.product-card .product-name a{display:inline}
+@media(max-width:767px){
+  .product-card .product-name{display:block;white-space:nowrap;-webkit-line-clamp:unset;-webkit-box-orient:unset;min-height:0;overflow-wrap:normal}
+  .product-card .product-name a{white-space:nowrap}
+}
+.product-card .product-body-colors{height:20px;flex-wrap:nowrap;overflow:hidden;margin:0 0 10px;flex:none}
+/* cards without colours reserve the same space (20px row + 10px margin) so price and button line up */
+.product-card .product-body:not(:has(.product-body-colors)) .product-name{margin-bottom:38px}
+.product-card .price{display:flex;align-items:baseline;flex-wrap:nowrap;gap:8px;min-width:0;white-space:nowrap}
+.product-card .price .price-old{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* ==========================================================================
+   Long names on the product detail page (and cart): they WRAP onto the next line
+   (even an unbroken word like "TestTestTest…") instead of stretching the page.
+   ========================================================================== */
+.detail-grid>*{min-width:0}
+.detail-info,.detail-info h1,.detail-info p,.detail-info .product-cat,#descWrapper p{overflow-wrap:anywhere;word-break:normal}
+@media(max-width:900px){.detail-grid{grid-template-columns:minmax(0,1fr)}}
+@media(min-width:768px) and (max-width:900px){.detail-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.cart-item>*{min-width:0;overflow-wrap:anywhere}

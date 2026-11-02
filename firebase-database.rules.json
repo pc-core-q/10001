@@ -1,0 +1,58 @@
+{
+  "rules": {
+    "ws_categories": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ADMIN_UID'"
+    },
+    "ws_products": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ADMIN_UID'",
+      ".indexOn": ["categoryId", "featured", "isOffer", "isNew", "id"],
+      "$pid": {
+        ".validate": "newData.hasChildren(['id']) && newData.child('id').val() === $pid"
+      }
+    },
+    "ws_settings": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ADMIN_UID'"
+    },
+    "ws_ads": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ADMIN_UID'"
+    },
+    "ws_index": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ADMIN_UID'",
+      "items": {
+        ".indexOn": ["u"]
+      }
+    },
+    "ws_meta_v": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ADMIN_UID'"
+    },
+    "ws_orders": {
+      ".read": "auth != null && auth.uid === 'ADMIN_UID'",
+      ".indexOn": ["id"],
+      "$orderKey": {
+        ".write": "auth != null && auth.uid === 'ADMIN_UID' || (!data.exists() && newData.exists())",
+        ".validate": "newData.hasChildren(['id', 'date', 'items', 'total'])",
+        "id":    { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "date":  { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "type":  { ".validate": "newData.val() === 'single' || newData.val() === 'cart'" },
+        "total": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "items": {
+          ".validate": "newData.hasChildren() && newData.numChildren() <= 100",
+          "$i": {
+            "qty":   { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 9999" },
+            "price": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "name":  { ".validate": "newData.isString() && newData.val().length <= 300" }
+          }
+        },
+        "customer": { "$f": { ".validate": "newData.isString() && newData.val().length <= 300" } },
+        "status": { ".validate": "newData.isString() && (newData.val() === 'pending' || (auth != null && auth.uid === 'ADMIN_UID'))" },
+        "stockDeducted": { ".validate": "newData.isBoolean() && (newData.val() === false || (auth != null && auth.uid === 'ADMIN_UID'))" }
+      }
+    }
+  }
+}

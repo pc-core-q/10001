@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>السلة | {{storeName}}</title>
+<link rel="stylesheet" href="css/style.css?v=93">
+  <link rel="stylesheet" href="css/refresh.css?v=93">
+  <script src="js/config.js?v=93"></script>
+  <script src="js/themes.js?v=93"></script>
+  <script src="js/boot.js?v=93"></script>
+</head>
+<body>
+
+<div id="site-header" data-active="products"></div>
+
+<main>
+  <section class="page-header">
+    <div class="container">
+      <div class="breadcrumb"><a href="index.html">الرئيسية</a> / السلة</div>
+      <h1>سلة التسوق</h1>
+      <p>راجع منتجاتك ثم أكمل الطلب مباشرة عبر واتساب — لا حاجة لأي بيانات دفع إلكتروني.</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:10px;">
+    <div class="container">
+      <div class="cart-layout">
+        <div>
+          <div id="cartWarning" class="setup-note" style="display:none;">
+            بعض المنتجات في سلتك لم تعد متوفرة بالكامل، الرجاء مراجعة الكميات قبل إرسال الطلب.
+          </div>
+          <!-- إضافة الحاوية المسؤولة عن التمرير هنا -->
+          <div class="cart-items-wrapper">
+              <div id="cartItems"></div>
+          </div>
+        </div>
+
+        <aside class="summary-card">
+          <h3>ملخص الطلب</h3>
+          <div class="summary-row"><span>عدد القطع</span><span id="cartItemCount">0</span></div>
+          <div class="summary-row"><span>المجموع الفرعي</span><span id="cartSubtotal">0 د.ع</span></div>
+          <div class="summary-row total"><span>الإجمالي</span><span id="cartTotal">0 د.ع</span></div>
+          <button class="btn btn-whatsapp btn-block" id="checkoutBtn" style="margin-top:16px;">طلب عبر واتساب</button>
+          <p id="cartDeliveryNote" style="font-size: 0.9rem; margin-top: 15px; line-height: 1.8;"></p>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+
+<!-- سكربتات مؤجلة (defer): لا تحجب الرسم. القراءة من Firebase عبر REST داخل store.js (بدون SDK) -->
+<script src="js/icons.js?v=93" defer></script>
+<script src="js/store.js?v=93" defer></script>
+<script src="js/whatsapp.js?v=93" defer></script>
+<script src="js/app.js?v=93" defer></script>
+<script src="js/cart.js?v=93" defer></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var btn = document.getElementById("checkoutBtn");
+    if (btn && typeof iconSvg === "function") {
+      btn.innerHTML = iconSvg("whatsapp") + " طلب عبر واتساب";
+    }
+  });
+</script>
+</body>
+</html>

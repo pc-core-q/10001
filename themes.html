@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-no-analytics>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>استوديو الثيمات — معرض الثيمات ومحرّر بصري</title>
+  <!-- أداة للمطوّر فقط. لا تتصل بـ Firebase ولا تكتب أي شيء في المشروع؛ تقرأ js/themes.js وتولّد كوداً للنسخ واللصق. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap">
+  <style>
+    :root{
+      --paper:#F4F1EA; --card:#FFFFFF; --ink:#1B2230; --mut:#5B6272; --line:#E2DDD2; --line-2:#EEEAE1;
+      --brand:#B8420F; --brand-d:#963409; --brand-soft:#FBEBDD;
+      --ok:#14683A; --ok-bg:#E6F4EC; --warn:#8A5A00; --warn-bg:#FFF4D6; --bad:#B3261E; --bad-bg:#FCE8E6;
+      --r:14px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    }
+    *{box-sizing:border-box}
+    html{scroll-padding-top:80px}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:'Tajawal',system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;line-height:1.65;font-size:15px}
+    button,input,select,textarea{font:inherit;color:inherit}
+    :focus-visible{outline:3px solid var(--ink);outline-offset:2px;border-radius:6px}
+    code,.ltr{direction:ltr;unicode-bidi:isolate}
+    code{font-family:var(--mono);font-size:.84em;background:#EFEBE1;padding:1px 6px;border-radius:6px}
+    .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+    /* ===== الشريط العلوي ===== */
+    .top{position:sticky;top:0;z-index:30;background:var(--ink);color:#fff}
+    .top-in{max-width:1500px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+    .brand-t{display:flex;flex-direction:column;line-height:1.2}
+    .brand-t b{font-size:1.15rem;font-weight:800}
+    .brand-t small{color:#C5CBD8;font-size:.78rem}
+    .nav{display:flex;gap:6px;margin-inline-start:auto;flex-wrap:wrap}
+    .nav button{border:1px solid transparent;background:transparent;color:#E6E9F0;padding:7px 16px;border-radius:999px;cursor:pointer;font-weight:500}
+    .nav button:hover{background:rgba(255,255,255,.1)}
+    .nav button[aria-current="page"]{background:#fff;color:var(--ink);font-weight:700}
+    .top :focus-visible{outline-color:#fff}
+
+    .wrap{max-width:1500px;margin:0 auto;padding:22px 20px 90px}
+    .view[hidden]{display:none}
+    h1,h2,h3,h4{margin:0 0 .4em;line-height:1.3}
+    h2{font-size:1.35rem} h3{font-size:1.05rem}
+    .lead{color:var(--mut);margin:0 0 16px;max-width:75ch}
+
+    /* ===== أزرار عامة ===== */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:#fff;padding:7px 14px;border-radius:10px;cursor:pointer;font-size:.9rem;font-weight:500;text-decoration:none;color:var(--ink);transition:background .15s,border-color .15s}
+    .btn:hover{background:#FAF8F3;border-color:#CFC8B8}
+    .btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+    .btn.dark:hover{background:#2C3547}
+    .btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}
+    .btn.brand:hover{background:var(--brand-d)}
+    .btn.sm{padding:4px 10px;font-size:.82rem;border-radius:8px}
+    .btn[disabled]{opacity:.5;cursor:not-allowed}
+
+    /* ===== المعرض ===== */
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:18px}
+    .toolbar .fld{display:flex;flex-direction:column;gap:2px;font-size:.78rem;color:var(--mut)}
+    .toolbar input[type=search],.toolbar select{height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff;min-width:150px;color:var(--ink);font-size:.92rem}
+    .toolbar input[type=search]{min-width:240px}
+    .toolbar .count{margin-inline-start:auto;color:var(--mut);font-size:.9rem}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px}
+    .tcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
+    .tcard .thumb{border-bottom:1px solid var(--line);pointer-events:none}
+    .tinfo{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+    .trow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+    .trow b{font-size:1.08rem}
+    .meta{color:var(--mut);font-size:.84rem}
+    .pal{display:flex;gap:4px;flex-wrap:wrap}
+    .pal i{width:22px;height:22px;border-radius:7px;border:1px solid rgba(0,0,0,.14);display:block}
+    .pal i.opt{border-radius:50%}
+    .chips{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{display:inline-flex;align-items:center;gap:4px;font-size:.76rem;padding:2px 9px;border-radius:999px;background:#F1EEE6;color:#3A4152;border:1px solid var(--line-2)}
+    .chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#BFE0CD}
+    .chip.warn{background:var(--warn-bg);color:var(--warn);border-color:#EBD79B}
+    .chip.bad{background:var(--bad-bg);color:var(--bad);border-color:#F1BDB8}
+    .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
+    .empty{padding:40px;text-align:center;color:var(--mut);background:var(--card);border:1px dashed #CFC8B8;border-radius:var(--r)}
+
+    /* ===== مصغّر المتجر في بطاقات المعرض ===== */
+    .mini{font-size:11px;direction:rtl;line-height:1.5}
+    .mini .h{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid}
+    .mini .lg{font-weight:800;font-size:13px}
+    .mini .ic{display:flex;gap:6px}.mini .ic i{width:13px;height:13px;border-radius:4px;border:2px solid currentColor;opacity:.8;display:block}
+    .mini .hero{padding:14px 12px 16px}
+    .mini .eb{display:inline-block;padding:1px 9px;border-radius:99px;font-size:10px;margin-bottom:6px}
+    .mini .hero h4{margin:0 0 3px;font-size:15px}
+    .mini .hero p{margin:0 0 9px;opacity:.85}
+    .mini .b{display:inline-block;padding:6px 14px;font-weight:700;font-size:11px}
+    .mini .body{padding:12px}
+    .mini .tt{font-weight:800;font-size:12px;margin-bottom:8px}
+    .mini .ps{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .mini .p{border:1px solid;overflow:hidden}
+    .mini .im{position:relative;width:100%;display:flex;align-items:center;justify-content:center}
+    .mini .im svg{width:44%;opacity:.5}
+    .mini .bd{position:absolute;top:6px;inset-inline-start:6px;padding:0 8px;border-radius:99px;font-size:9px;font-weight:700}
+    .mini .pi{padding:7px 8px 8px}
+    .mini .pn{font-size:10.5px}
+    .mini .pr{font-weight:800;font-size:12px;margin:2px 0 6px}
+    .mini .pb{display:block;text-align:center;padding:5px 0;font-weight:700;font-size:10.5px}
+    .mini .f{padding:10px 12px;text-align:center;font-size:10px;border-top:3px solid}
+
+    /* ===== الاستوديو ===== */
+    .studio{display:grid;grid-template-columns:minmax(360px,440px) minmax(0,1fr);gap:20px;align-items:start}
+    .controls{display:flex;flex-direction:column;gap:12px}
+    .banner{display:flex;gap:10px;align-items:flex-start;background:var(--brand-soft);border:1px solid #F0CDB3;color:#5C2208;border-radius:12px;padding:10px 14px;font-size:.9rem}
+    .banner[hidden]{display:none}
+    .startbar{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+    .startbar .fld{flex:1;min-width:170px}
+    .grp{background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+    .grp>summary{cursor:pointer;list-style:none;padding:12px 14px;font-weight:700;display:flex;align-items:center;gap:8px}
+    .grp>summary::-webkit-details-marker{display:none}
+    .grp>summary::before{content:"";width:8px;height:8px;border-inline-end:2px solid var(--mut);border-bottom:2px solid var(--mut);transform:rotate(45deg);transition:transform .15s;margin-inline-end:4px}
+    .grp[open]>summary::before{transform:rotate(-135deg)}
+    .grp>summary small{font-weight:400;color:var(--mut);margin-inline-start:auto;font-size:.8rem}
+    .grp-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px}
+    .fld{display:flex;flex-direction:column;gap:4px}
+    .fld>label,.fld>.lb{font-size:.86rem;font-weight:500}
+    .fld .hint{font-size:.77rem;color:var(--mut);font-weight:400}
+    .inp{height:38px;border:1px solid #CFC8B8;border-radius:10px;padding:0 10px;background:#fff;width:100%;font-size:.92rem}
+    textarea.inp{height:auto;padding:8px 10px;min-height:60px;resize:vertical}
+    .inp.invalid{border-color:var(--bad);background:#FFF7F6}
+    .inp[disabled]{background:#F4F1EA;color:var(--mut)}
+    .err{color:var(--bad);font-size:.8rem}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .sub-t{font-size:.8rem;font-weight:700;color:var(--mut);margin:8px 0 0;padding-top:8px;border-top:1px dashed var(--line)}
+    .sub-t:first-child{border-top:0;margin-top:0;padding-top:0}
+
+    .crow{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line-2)}
+    .crow:last-child{border-bottom:0}
+    .crow .nm{font-size:.88rem;font-weight:500;display:flex;flex-direction:column}
+    .crow .nm small{font-weight:400;color:var(--mut);font-size:.75rem}
+    .crow .nm label{display:flex;align-items:center;gap:6px;cursor:pointer}
+    .crow .ctl{display:flex;align-items:center;gap:6px}
+    .crow input[type=color]{width:38px;height:34px;padding:2px;border:1px solid #CFC8B8;border-radius:8px;background:#fff;cursor:pointer}
+    .crow input[type=color][disabled]{opacity:.45;cursor:not-allowed}
+    .crow .hex{width:104px;direction:ltr;text-align:left;font-family:var(--mono);height:34px;font-size:.84rem}
+    .crow .inh{grid-column:1/-1;font-size:.76rem;color:var(--mut);display:flex;align-items:center;gap:6px}
+    .crow .inh i{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.2);display:inline-block}
+    .crow .err{grid-column:1/-1}
+    input[type=checkbox],input[type=radio]{width:17px;height:17px;accent-color:var(--brand)}
+    .wts{display:flex;gap:6px;flex-wrap:wrap}
+    .wts label{display:inline-flex;align-items:center;gap:5px;border:1px solid #CFC8B8;border-radius:8px;padding:3px 9px;background:#fff;cursor:pointer;font-size:.86rem}
+    .wts label.dis{opacity:.45;cursor:not-allowed}
+    .rng{display:grid;grid-template-columns:1fr 70px;gap:10px;align-items:center}
+    .rng input[type=range]{width:100%;accent-color:var(--brand)}
+
+    /* ===== لوحة المعاينة / الفحص / الكود ===== */
+    .stage{position:sticky;top:72px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 92px);min-height:560px}
+    .tabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line);background:#FAF8F3;align-items:flex-end;flex-wrap:wrap}
+    .tabs [role=tab]{border:1px solid transparent;border-bottom:0;background:transparent;padding:8px 16px;border-radius:10px 10px 0 0;cursor:pointer;font-weight:500;color:var(--mut);display:inline-flex;gap:6px;align-items:center}
+    .tabs [role=tab][aria-selected=true]{background:#fff;border-color:var(--line);color:var(--ink);font-weight:700;margin-bottom:-1px}
+    .tabs .grow{margin-inline-start:auto;padding-bottom:6px;display:flex;gap:6px;align-items:center}
+    .pill{display:inline-flex;min-width:20px;height:20px;padding:0 6px;border-radius:99px;font-size:.75rem;font-weight:700;align-items:center;justify-content:center}
+    .pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}
+    .panel{flex:1;min-height:0;overflow:auto;display:none}
+    .panel.on{display:flex;flex-direction:column}
+    .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+    .seg button{border:0;background:#fff;padding:5px 12px;cursor:pointer;font-size:.84rem}
+    .seg button+button{border-inline-start:1px solid var(--line)}
+    .seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+    .framebox{flex:1;min-height:0;overflow:hidden;background:#E8E4DA;display:flex;justify-content:center;align-items:flex-start;padding:14px 10px;position:relative}
+    .framebox .scaler{transform-origin:top center;background:#fff;box-shadow:0 8px 30px rgba(20,24,34,.18);border-radius:10px;overflow:hidden;flex:none}
+    .framebox iframe{border:0;display:block;width:100%;height:100%;background:#fff}
+    .framenote{font-size:.78rem;color:var(--mut);padding:6px 12px;border-top:1px solid var(--line);background:#FAF8F3}
+
+    .rep{padding:14px 16px 18px;display:flex;flex-direction:column;gap:14px}
+    .status{display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:12px;font-weight:700}
+    .status.ok{background:var(--ok-bg);color:var(--ok)}.status.warn{background:var(--warn-bg);color:var(--warn)}.status.bad{background:var(--bad-bg);color:var(--bad)}
+    .status small{font-weight:400;display:block}
+    .vlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+    .vlist li{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;padding:6px 10px;border-radius:8px;background:#FAF8F3}
+    .vlist li .ico{font-weight:800;width:18px;text-align:center;flex:none}
+    .vlist li.error{background:var(--bad-bg);color:#7A1A14}.vlist li.warn{background:var(--warn-bg);color:#5E3D00}
+    table.ct{width:100%;border-collapse:collapse;font-size:.88rem}
+    table.ct th{text-align:start;font-weight:700;color:var(--mut);font-size:.78rem;padding:4px 8px;border-bottom:1px solid var(--line)}
+    table.ct td{padding:7px 8px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+    .aa{display:inline-flex;align-items:center;justify-content:center;min-width:46px;height:30px;border-radius:7px;border:1px solid rgba(0,0,0,.15);font-weight:800;font-size:.9rem}
+    .st{font-weight:700;white-space:nowrap}
+    .st.ok{color:var(--ok)}.st.warn{color:var(--warn)}.st.bad{color:var(--bad)}
+    .sug{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.8rem;color:var(--mut)}
+    .sug i{width:16px;height:16px;border-radius:5px;border:1px solid rgba(0,0,0,.2);display:inline-block}
+
+    .codep{padding:14px 16px 18px;display:flex;flex-direction:column;gap:14px}
+    .cb{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+    .cb-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:#FAF8F3;border-bottom:1px solid var(--line)}
+    .cb-h b{font-size:.92rem}
+    .cb-h .sp{margin-inline-start:auto;display:flex;gap:6px;flex-wrap:wrap}
+    pre.code{margin:0;padding:12px 14px;background:#161B26;color:#E6EAF2;font-family:var(--mono);font-size:.82rem;line-height:1.7;direction:ltr;text-align:left;overflow:auto;white-space:pre;tab-size:2;max-height:360px}
+    pre.code .k{color:#8FD0FF}pre.code .s{color:#F9C98A}pre.code .n{color:#B8E48B}pre.code .c{color:#8A93A6}
+    .copied-msg{font-size:.82rem;font-weight:700}
+    .copied-msg.ok{color:var(--ok)}.copied-msg.bad{color:var(--bad)}
+    .note{font-size:.84rem;color:var(--mut);margin:0}
+    .warnbox{background:var(--warn-bg);color:#5E3D00;border-radius:10px;padding:8px 12px;font-size:.86rem}
+
+    /* ===== حوار المعاينة ===== */
+    dialog{border:0;border-radius:16px;padding:0;width:min(1100px,96vw);max-height:94vh;box-shadow:0 30px 80px rgba(10,14,24,.45);color:var(--ink);background:var(--card)}
+    dialog::backdrop{background:rgba(15,19,30,.6)}
+    .dlg-h{display:flex;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+    .dlg-h .x{margin-inline-start:auto}
+    .dlg-box{height:min(72vh,720px);display:flex;flex-direction:column}
+    .dlg-box .framebox{flex:1}
+
+    /* ===== شرح الاستخدام ===== */
+    .help{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 20px}
+    .steps{counter-reset:s;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+    .steps>li{counter-increment:s;position:relative;padding:12px 16px 12px 16px;padding-inline-start:56px;background:#FAF8F3;border:1px solid var(--line-2);border-radius:12px}
+    .steps>li::before{content:counter(s);position:absolute;inset-inline-start:14px;top:12px;width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:800}
+    .steps>li b{display:block;margin-bottom:2px}
+    .steps p{margin:2px 0}
+    .help pre.code{max-height:none;border-radius:10px;margin:8px 0}
+    .help details{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#fff}
+    .help details summary{cursor:pointer;padding:9px 14px;font-weight:700}
+    .help details div{padding:0 14px 12px}
+    .help ul{margin:4px 0;padding-inline-start:20px}
+    table.sc{width:100%;border-collapse:collapse;font-size:.86rem}
+    table.sc td,table.sc th{padding:6px 8px;border-bottom:1px solid var(--line-2);text-align:start;vertical-align:top}
+    table.sc th{color:var(--mut);font-size:.78rem}
+    .side-h{position:sticky;top:76px}
+
+    @media (max-width:1100px){
+      .studio{grid-template-columns:1fr}
+      .stage{position:relative;top:0;height:auto;min-height:0;order:-1}
+      .panel.on{max-height:none}
+      .framebox{height:70vh;flex:none}
+      .help{grid-template-columns:1fr}.side-h{position:static}
+    }
+    @media (max-width:560px){
+      .wrap{padding:14px 12px 70px}.nav{margin-inline-start:0;width:100%}.nav button{flex:1;padding:7px 6px;font-size:.88rem}
+      .toolbar input[type=search]{min-width:0;width:100%}.two{grid-template-columns:1fr}
+    }
+    @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+<a class="sr" href="#main">تخطَّ إلى المحتوى</a>
+<header class="top">
+  <div class="top-in">
+    <div class="brand-t"><b>استوديو الثيمات</b><small>للمطوّر فقط — لا علاقة له بزوّار المتجر</small></div>
+    <nav class="nav" aria-label="أقسام الأداة">
+      <button type="button" data-go="gallery">المعرض</button>
+      <button type="button" data-go="studio">المحرّر</button>
+      <button type="button" data-go="help">كيفية الاستخدام</button>
+    </nav>
+  </div>
+</header>
+<div id="live" class="sr" role="status" aria-live="polite"></div>
+
+<main class="wrap" id="main">
+
+  <!-- ============ المعرض ============ -->
+  <section class="view" id="v-gallery" aria-labelledby="h-gallery">
+    <h2 id="h-gallery">معرض الثيمات</h2>
+    <p class="lead">كل ثيم هنا مقروء مباشرةً من <code>js/themes.js</code>. فتح الثيم أو معاينته لا يغيّر شيئاً في الملف؛ التعديل يتم دائماً على نسخة داخل المحرّر.</p>
+    <div class="toolbar" role="search">
+      <div class="fld"><label for="q">بحث</label><input type="search" id="q" placeholder="اسم، معرّف، فئة، خط أو لون…"></div>
+      <div class="fld"><label for="fcat">الفئة</label><select id="fcat"></select></div>
+      <div class="fld"><label for="fsort">الترتيب</label>
+        <select id="fsort">
+          <option value="orig">ترتيبها في الملف</option>
+          <option value="label">الاسم (أبجدياً)</option>
+          <option value="cat">الفئة</option>
+          <option value="quality">جودة التباين (الأفضل أولاً)</option>
+        </select></div>
+      <button type="button" class="btn brand" id="btnNewTheme">＋ ثيم جديد</button>
+      <span class="count" id="gcount" aria-live="polite"></span>
+    </div>
+    <div class="grid" id="galleryGrid"></div>
+  </section>
+
+  <!-- ============ المحرّر ============ -->
+  <section class="view" id="v-studio" aria-labelledby="h-studio" hidden>
+    <h2 id="h-studio" class="sr">محرّر الثيم</h2>
+    <div class="studio">
+      <div class="controls">
+        <div class="banner" id="banner" hidden></div>
+        <div class="startbar">
+          <div class="fld"><label for="baseSel">ابدأ من ثيم موجود (يُنشأ كنسخة جديدة)</label><select id="baseSel" class="inp"></select></div>
+          <button type="button" class="btn" id="btnReset" title="يعيد القيم إلى ما كانت عليه عند فتح الثيم">↺ استرجاع الأصل</button>
+        </div>
+        <div id="controls"></div>
+      </div>
+
+      <div class="stage" aria-label="المعاينة والفحص والكود">
+        <div class="tabs" role="tablist" aria-label="عرض النتيجة">
+          <button type="button" role="tab" id="tab-prev" aria-controls="p-prev" aria-selected="true">المعاينة</button>
+          <button type="button" role="tab" id="tab-qual" aria-controls="p-qual" aria-selected="false" tabindex="-1">الفحص والتباين <span class="pill ok" id="pill-q">0</span></button>
+          <button type="button" role="tab" id="tab-code" aria-controls="p-code" aria-selected="false" tabindex="-1">الكود الجاهز <span class="pill ok" id="pill-c">✓</span></button>
+          <div class="grow" id="devWrap">
+            <div class="seg" role="group" aria-label="حجم المعاينة" id="devSeg">
+              <button type="button" data-w="1280" aria-pressed="true">سطح المكتب</button>
+              <button type="button" data-w="820" aria-pressed="false">لوحي</button>
+              <button type="button" data-w="390" aria-pressed="false">جوال</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel on" id="p-prev" role="tabpanel" aria-labelledby="tab-prev">
+          <div class="framebox" id="prevHost"></div>
+          <div class="framenote">المعاينة تحمّل <code>css/style.css</code> و<code>css/refresh.css</code> الحقيقيَين وتطبّق عليهما نفس منطق <code>js/boot.js</code> لحساب الألوان، لذا فالتجاوب (الجوال/اللوحي) حقيقي. الصور والنصوص تجريبية.</div>
+        </div>
+        <div class="panel" id="p-qual" role="tabpanel" aria-labelledby="tab-qual"><div class="rep" id="qualHost"></div></div>
+        <div class="panel" id="p-code" role="tabpanel" aria-labelledby="tab-code"><div class="codep" id="codeHost"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ كيفية الاستخدام ============ -->
+  <section class="view" id="v-help" aria-labelledby="h-help" hidden>
+    <div class="help">
+      <div>
+        <h2 id="h-help">كيفية استخدام محرر الثيمات</h2>
+        <p class="lead">هذه الأداة تبني كود ثيم جاهزاً بصرياً. <b>لا تحفظ شيئاً داخل المشروع ولا تعدّل <code>config.js</code> تلقائياً</b> — أنت تنسخ الكود وتلصقه بنفسك ثم تشغّل أمر الفحص.</p>
+        <ol class="steps">
+          <li><b>تصفّح الثيمات وعاينها</b>
+            <p>من تبويب «المعرض» استخدم البحث والفئة والترتيب. زر «معاينة» يفتح متجراً كاملاً (سطح المكتب / لوحي / جوال) دون أن يغيّر أي ثيم. كل بطاقة تُظهر ألوان الثيم وخطه واستدارته وملخص فحص التباين.</p></li>
+          <li><b>ابدأ بنسخة أو بثيم جديد</b>
+            <p>«نسخ كثيم جديد» يفتح المحرّر بقيم الثيم الأصلية تحت معرّف جديد (مثل <code>pet-olive-copy</code>) — وهذا الخيار الموصى به. «فتح في المحرر» يحمّل الثيم بمعرّفه نفسه لتعديله: الكود الناتج حينها <b>يستبدل</b> كتلة الثيم الحالية في <code>js/themes.js</code> ولا يُضاف كمفتاح ثانٍ. «ثيم جديد» يبدأ من قيم محايدة.</p></li>
+          <li><b>غيّر الألوان</b>
+            <p>لكل لون منتقٍ بصري وخانة نص تقبل <code>#RRGGBB</code> أو <code>#RGB</code>. الألوان الثمانية الأساسية إلزامية. الألوان الاختيارية (الهيدر، الإعلان، الفوتر، الأزرار…) تظهر بخانة «تخصيص»: وهي مطفأة افتراضياً فيرث اللون قيمته من الألوان الأساسية كما يفعل <code>boot.js</code> (يُعرض لك اللون الموروث بجانبها)، وعند تفعيلها يُكتب اللون صراحةً في الكود. أي تغيير ينعكس فوراً على المعاينة.</p></li>
+          <li><b>اضبط الخط والشكل</b>
+            <p>اختر الخط من قائمة الخطوط العربية المفحوصة في <code>tools/check-themes.js</code> (أو اكتب خطاً آخر من Google Fonts مع تنبيه). الأوزان المتاحة هي التي يدعمها الخط فقط، لأن وزناً غير مدعوم يُفشل تحميل الخط كله. ثم استدارة البطاقات والأزرار (0–60)، ونسبة صورة المنتج، وملاءمتها <code>cover</code> أو <code>contain</code>، وعرض الحاوية الاختياري (900–2000).</p>
+            <p><b>أبعاد البطاقات:</b> في مجموعة «أبعاد البطاقات» تحدّد عرض وطول البطاقة بالبكسل لأربعة مواضع (منتجات الرئيسية، أقسام الرئيسية، صفحة المنتجات، صفحة الأقسام)، ولكلٍّ منها قيم للحاسوب وأخرى للجوال. الحقل الفارغ يبقى بالشكل الأصلي المتجاوب. في بطاقات المنتجات تتمدد الصورة لتملأ ما يتبقى من الطول، وفي صفحة الأقسام الطول حدّ أدنى. تشاهد النتيجة في أسفل المعاينة (أقسام «صفحة المنتجات» و«صفحة الأقسام»).</p></li>
+          <li><b>افهم تقرير التباين</b>
+            <p>في تبويب «الفحص والتباين» تُحسب نسبة التباين (WCAG) لكل زوج نص/خلفية بالألوان الفعلية التي سيطبّقها المتجر. <b>✓</b> ناجح، <b>!</b> تنبيه (جمالي)، <b>✗</b> فشل — والفشل هو ما يعدّه <code>check-themes.js</code> عيباً. لا تُغيَّر ألوانك تلقائياً أبداً؛ يظهر «اقتراح» بلون بديل ولا يُطبَّق إلا إذا ضغطت «تطبيق».</p></li>
+          <li><b>انسخ الكود</b>
+            <p>تبويب «الكود الجاهز» يعرض كائن الثيم، وسطر <code>preset</code>، وأمر الفحص، مع أزرار نسخ (وتنزيل كملف <code>.js</code>). يتعطّل النسخ إذا وُجد خطأ في البنية (معرّف غير صالح/مكرر، لون غير صالح…) إلى أن تصلحه.</p></li>
+          <li><b>الصق الكود في <code>js/themes.js</code></b>
+            <p>داخل الكائن <code>STORE_THEMES</code> نفسه — لا ككائن مستقل. الصقه بعد قوس آخر ثيم وقبل التعليق «أضف ثيمك الجديد هنا» (الكود يبدأ بفاصلة افتراضياً لهذا الموضع):</p>
+<pre class="code"><span class="c">  "pet-olive": { … }          // آخر ثيم موجود (بلا فاصلة بعده)</span>
+<span class="k">  ,"my-theme"</span>: { … }              <span class="c">// ← الصق هنا (يبدأ بفاصلة)</span>
+<span class="c">  /* أضف ثيمك الجديد هنا … */</span>
+};</pre>
+            <p>إن لصقته بين ثيمين اختر «فاصلة في النهاية» في تبويب الكود.</p></li>
+          <li><b>شغّل أمر الفحص المعتمد في المشروع</b>
+<pre class="code">node tools/check-themes.js my-theme</pre>
+            <p>(✗ = عيب يجب إصلاحه، ! = تنبيه). بدون اسم يفحص كل الثيمات: <code>node tools/check-themes.js</code>.</p></li>
+          <li><b>فعّل الثيم من <code>js/config.js</code></b>
+            <p><b>في <code>js/config.js</code> وليس <code>config.template.js</code></b> (القالب الفارغ لا تحمّله أي صفحة فلن يتغير الموقع)، داخل <code>theme</code> غيّر السطر التالي إلى معرّف الثيم نفسه حرفاً بحرف (واختيارياً أضف الاسم لتعليق قائمة الثيمات في <code>config.js</code> و<code>config.template.js</code>):</p>
+<pre class="code">theme: {
+  preset: "my-theme",
+  …
+}</pre></li>
+          <li><b>اختبر المتجر فعلياً</b>
+            <p>افتح <code>index.html</code> وتأكد من الألوان والخط في الرئيسية والمنتجات والأدمن. افتح الـ Console: يجب ألا يظهر تحذير <code>[theme]</code>، واكتب <code>StoreBoot.activePreset</code> لمعرفة الثيم المطبَّق. وللعرض على عميل دون تعديل الملف فعّل <code>theme.allowPreview: true</code> وافتح <code>index.html?theme=my-theme</code> (ثم عطّله في النسخة النهائية). وشغّل <code>node tools/check-config.js</code> للتأكد من الإعدادات.</p></li>
+        </ol>
+
+        <h3 style="margin-top:26px">حلّ المشكلات الشائعة</h3>
+        <details><summary>معرّف مكرر (الثيم الجديد لا يظهر كما صمّمته)</summary><div>
+          <p>إذا وُجد مفتاحان بالاسم نفسه داخل <code>STORE_THEMES</code> فجافاسكربت لا يعطي خطأً بل يعتمد <b>آخر</b> تعريف بصمت. استخدم معرّفاً لا يوجد في المعرض (المحرّر يمنع التكرار)، وابحث في <code>themes.js</code> عن الاسم للتأكد أنه مرة واحدة.</p></div></details>
+        <details><summary>فاصلة ناقصة أو زائدة (تتوقف الثيمات كلها)</summary><div>
+          <p>الخطأ الأشهر: لصق الكود بعد ثيم دون فاصلة بينهما. يظهر في الـ Console <code>SyntaxError</code> ويفشل <code>check-themes.js</code>، وعندها لا يُحمَّل <code>themes.js</code> فيعود المتجر إلى ثيم <code>navy-gold</code> الاحتياطي. الحل: ضع فاصلة بين كل ثيمين وبلا فاصلة بعد الأخير.</p></div></details>
+        <details><summary>لون غير صالح</summary><div>
+          <p>الصيغة المقبولة <code>#RRGGBB</code> (أو <code>#RGB</code>). أسماء الألوان (<code>red</code>) و<code>rgb()</code> غير مقبولة. المحرّر يرفض القيمة ويعلّم الخانة بالأحمر، و<code>check-themes.js</code> يعدّها ✗.</p></div></details>
+        <details><summary>اسم <code>preset</code> لا يطابق معرّف الثيم</summary><div>
+          <p>يظهر في الـ Console تحذير <code>[theme] الثيم «…» غير موجود</code> ويُستخدم <code>navy-gold</code>. المعرّف يجب أن يتطابق مع مفتاح الثيم تماماً (تُصحَّح الأحرف الكبيرة والمسافات والشرطة السفلية تلقائياً، لكن الأخطاء الإملائية لا). انسخ سطر <code>preset</code> من هذه الأداة بدل كتابته يدوياً.</p></div></details>
+        <details><summary>الخط لا يظهر</summary><div>
+          <p>وزن غير مدعوم من الخط (مثل 500 مع <code>Almarai</code>) يُفشل تحميله كله. الأوزان في المحرّر مقيّدة بما يدعمه الخط، و<code>check-themes.js</code> يفحصها. تأكد أيضاً من اتصال الإنترنت لأن الخطوط من Google Fonts.</p></div></details>
+        <details><summary>أبعاد البطاقات لا تتغيّر أو تظهر مقصوصة</summary><div>
+          <p>تأكد أن الأبعاد داخل الكائن <code>cardSizes</code> في الثيم وأن أسماء المواضع صحيحة (<code>homeProducts</code> <code>homeCategories</code> <code>productsPage</code> <code>categoriesPage</code>)، وأن قيمة <code>theme.cardSizes</code> في <code>config.js</code> فارغة (أي قيمة هناك تتغلب على الثيم). لو كان الطول صغيراً جداً قد يُقص نص البطاقة؛ جرّب 380 فأكثر لبطاقة المنتج. افحص بـ <code>node tools/check-themes.js</code> و<code>node tools/check-config.js</code>.</p></div></details>
+        <details><summary>الثيم لم يتغيّر في المتجر رغم تعديل <code>config.js</code></summary><div>
+          <p>جرّب تحديثاً قسرياً للمتصفح، وتأكد من <code>?theme=off</code> إن كانت معاينة قديمة عالقة في التبويب، ومن أن <code>themes.js</code> و<code>boot.js</code> محمّلان في <code>&lt;head&gt;</code> بعد <code>config.js</code>.</p></div></details>
+      </div>
+
+      <aside class="side-h">
+        <div class="card">
+          <h3>بنية الثيم (من <code>js/themes.js</code>)</h3>
+          <table class="sc">
+            <tr><th>الخاصية</th><th>ملاحظات</th></tr>
+            <tr><td><code>label</code> <code>category</code> <code>inspiredBy</code></td><td>وصف للعرض فقط</td></tr>
+            <tr><td><code>colors</code></td><td>8 ألوان أساسية إلزامية + اختيارية</td></tr>
+            <tr><td><code>fontFamily</code> <code>fontWeights</code></td><td>خط Google Fonts وأوزانه، مثل <code>"400;500;700"</code></td></tr>
+            <tr><td><code>radiusCard</code> <code>radiusControl</code></td><td>رقم 0–60 (px)</td></tr>
+            <tr><td><code>containerWidth</code></td><td>اختياري 900–2000</td></tr>
+            <tr><td><code>cardImageRatio</code></td><td><code>"1/1"</code> <code>"4/5"</code> <code>"3/4"</code> <code>"4/3"</code></td></tr>
+            <tr><td><code>cardImageFit</code></td><td><code>"cover"</code> أو <code>"contain"</code></td></tr>
+            <tr><td><code>cardSizes</code></td><td>اختياري: لكل موضع <code>width</code> <code>height</code> <code>mobileWidth</code> <code>mobileHeight</code> (العرض 80–700، الطول 100–900)</td></tr>
+          </table>
+          <p class="note" style="margin-top:10px">ما يكتبه صاحب المتجر في <code>config.js</code> (ألوان/خط/استدارة) يتغلب على قيم الثيم.</p>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <h3>الأوامر المعتمدة</h3>
+          <pre class="code" style="border-radius:10px;font-size:.78rem">node tools/check-themes.js my-theme
+node tools/check-config.js
+node tests/boot-tests.js</pre>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <div class="dlg-h">
+    <b id="dlgTitle">معاينة</b><code id="dlgId"></code>
+    <div class="seg" role="group" aria-label="حجم المعاينة" id="dlgSeg">
+      <button type="button" data-w="1280" aria-pressed="true">سطح المكتب</button>
+      <button type="button" data-w="820" aria-pressed="false">لوحي</button>
+      <button type="button" data-w="390" aria-pressed="false">جوال</button>
+    </div>
+    <a class="btn sm" id="dlgStore" target="_blank" rel="noopener" title="يعمل فقط إذا كان theme.allowPreview: true في js/config.js">في المتجر الحقيقي ↗</a>
+    <button type="button" class="btn sm dark" id="dlgEdit">فتح في المحرر</button>
+    <button type="button" class="btn sm" id="dlgDup">نسخ كثيم جديد</button>
+    <button type="button" class="btn sm x" id="dlgClose" aria-label="إغلاق">إغلاق ✕</button>
+  </div>
+  <div class="dlg-box"><div class="framebox" id="dlgHost"></div></div>
+</dialog>
+
+<script src="js/themes.js"></script>
+<script id="engine">
+/* ==========================================================================
+   ThemeEngine — منطق الثيم المنقول من js/boot.js (buildVars) بلا تعديل في السلوك،
+   + فحص التباين بنفس عتبات tools/check-themes.js + مولّد الكود. بلا أي اعتماد خارجي.
+   ========================================================================== */
+var ThemeEngine = (function () {
+  "use strict";
+
+  /* ---------- أدوات الألوان (مطابقة لـ boot.js) ---------- */
+  function parse(h) {
+    h = String(h == null ? "" : h).trim().replace(/^#/, "");
+    if (h.length === 3) h = h.replace(/./g, "$&$&");
+    if (!/^[0-9a-f]{6}$/i.test(h)) return null;
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  function toHex(a) {
+    return "#" + a.map(function (v) { return ("0" + Math.round(Math.max(0, Math.min(255, v))).toString(16)).slice(-2); }).join("").toUpperCase();
+  }
+  function normHex(h) { var p = parse(h); return p ? toHex(p) : null; }
+  function mix(c1, c2, w) { var a = parse(c1), b = parse(c2); return toHex([0, 1, 2].map(function (i) { return a[i] * w + b[i] * (1 - w); })); }
+  function lum(c) {
+    var a = parse(c).map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+  }
+  function rgb(c) { return parse(c).join(","); }
+  function contrast(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+
+  /* ---------- ثوابت المخطط (من themes.js و check-themes.js) ---------- */
+  var CORE_KEYS = ["primary", "secondary", "accent", "bg", "surface", "text", "textMuted", "border"];
+  var OPT_KEYS = ["headerBg", "heroBg", "bandBg", "footerBg", "sidebarBg", "buttonBg", "buttonText", "buttonHoverBg", "heroButtonBg", "heroButtonText", "heading", "price", "headerText", "heroText", "bandText", "footerText", "sidebarText", "success", "warning", "error"];
+  var DEFAULTS = { primary: "#172554", secondary: "#2563EB", accent: "#D4A853", bg: "#F8FAFC", surface: "#FFFFFF", text: "#0F172A", textMuted: "#64748B", border: "#E2E8F0" };
+  var FONT_WEIGHTS = {
+    "Tajawal": [200, 300, 400, 500, 700, 800, 900], "Cairo": [200, 300, 400, 500, 600, 700, 800, 900, 1000], "Almarai": [300, 400, 700, 800],
+    "IBM Plex Sans Arabic": [100, 200, 300, 400, 500, 600, 700], "Readex Pro": [160, 200, 300, 400, 500, 600, 700], "Changa": [200, 300, 400, 500, 600, 700, 800],
+    "El Messiri": [400, 500, 600, 700], "Baloo Bhaijaan 2": [400, 500, 600, 700, 800], "Noto Kufi Arabic": [100, 200, 300, 400, 500, 600, 700, 800, 900],
+    "Amiri": [400, 700], "Lemonada": [300, 400, 500, 600, 700], "Harmattan": [400, 500, 600, 700], "Mada": [200, 300, 400, 500, 600, 700, 900]
+  };
+  var PLACES = ["homeProducts", "homeCategories", "productsPage", "categoriesPage"], SIZE_FIELDS = ["width", "height", "mobileWidth", "mobileHeight"];
+  function sizeLim(f) { return /height/i.test(f) ? [100, 900] : [80, 700]; }
+  function sizeNum(x, f) { var n = (x === "" || x == null) ? NaN : Number(x), l = sizeLim(f); return (isFinite(n) && n >= l[0] && n <= l[1]) ? Math.round(n) : NaN; }
+  var STATUS_DEFAULTS = { success: "#15803D", warning: "#B45309", error: "#DC2626" };
+
+  /* ---------- حلّ الثيم: نفس buildVars في boot.js (بلا ألوان config.js) ---------- */
+  function resolve(P) {
+    var base = P.colors || DEFAULTS, custom = {};
+    function pick(key) { return base[key]; }
+    function opt(key) { var y = base[key]; return (y && parse(y)) ? toHex(parse(y)) : ""; }
+    function sv(k) { return P[k]; }
+
+    var primary = pick("primary"), secondary = pick("secondary"), accent = pick("accent");
+    var bg = pick("bg"), surface = pick("surface"), text = pick("text");
+    var muted = pick("textMuted"), border = pick("border");
+    var onPrimary = lum(primary) > 0.5 ? text : "#FFFFFF";
+
+    var v = {
+      "--primary": primary, "--secondary": secondary, "--accent": accent,
+      "--bg": bg, "--surface": surface, "--text": text, "--text-2": muted, "--border": border,
+      "--primary-hover": mix(primary, "#000000", 0.82),
+      "--secondary-hover": mix(secondary, "#000000", 0.85),
+      "--secondary-50": mix(secondary, "#FFFFFF", 0.09),
+      "--secondary-100": mix(secondary, "#FFFFFF", 0.18),
+      "--accent-soft": mix(accent, "#FFFFFF", 0.14),
+      "--accent-ink": mix(accent, "#000000", 0.62),
+      "--accent-hover": mix(accent, "#FFFFFF", 0.82),
+      "--surface-2": mix(bg, border, 0.6),
+      "--border-soft": mix(border, "#FFFFFF", 0.55),
+      "--border-strong": mix(border, "#000000", 0.88),
+      "--on-primary": onPrimary,
+      "--on-primary-rgb": rgb(onPrimary),
+      "--on-primary-soft": mix(onPrimary, primary, 0.8),
+      "--on-primary-muted": mix(onPrimary, primary, 0.7),
+      "--on-primary-dim": mix(onPrimary, primary, 0.55),
+      "--primary-rgb": rgb(primary), "--accent-rgb": rgb(accent), "--secondary-rgb": rgb(secondary), "--text-rgb": rgb(text),
+      "--ink-800": mix(text, muted, 0.8), "--ink-700": mix(text, muted, 0.6),
+      "--ink-600": mix(text, muted, 0.35), "--ink-300": mix(muted, surface, 0.55),
+      "--navy-2": mix(text, muted, 0.6), "--olive-400": mix(muted, surface, 0.55),
+      "--info": secondary, "--info-bg": mix(secondary, "#FFFFFF", 0.07),
+      "--info-line": mix(secondary, "#FFFFFF", 0.25), "--info-ink": mix(secondary, "#000000", 0.85)
+    };
+    ["success", "warning", "error"].forEach(function (k) {
+      var c = opt(k);
+      if (c) {
+        v["--" + k] = c;
+        v["--" + k + "-bg"] = mix(c, "#FFFFFF", 0.08);
+        v["--" + k + "-line"] = mix(c, "#FFFFFF", 0.25);
+        v["--" + k + "-ink"] = mix(c, "#000000", 0.75);
+        if (k === "error") { v["--danger"] = c; v["--danger-bg"] = v["--error-bg"]; }
+      }
+    });
+    function num(x) { return (x === "" || x == null) ? NaN : Number(x); }
+    var rc = num(sv("radiusCard")), rk = num(sv("radiusControl")), cw = num(sv("containerWidth"));
+    if (isFinite(rc) && rc >= 0 && rc <= 60) v["--r-card"] = rc + "px";
+    if (isFinite(rk) && rk >= 0 && rk <= 60) v["--r-ctl"] = rk + "px";
+    if (isFinite(cw) && cw >= 900 && cw <= 2000) v["--container"] = cw + "px";
+    if (/^\d+\s*\/\s*\d+$/.test(String(sv("cardImageRatio") || ""))) v["--card-image-ratio"] = String(sv("cardImageRatio")).replace(/\s+/g, "");
+    var fit = sv("cardImageFit");
+    if (fit === "cover" || fit === "contain") v["--card-image-fit"] = fit;
+
+    var sys = "system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif";
+    var fam = String(sv("fontFamily") || "").replace(/['";{}<>]/g, "").trim();
+    if (/^system$/i.test(fam)) fam = "";
+    var fontWeights = String(P.fontWeights || "400;500;700");
+    var stack = fam ? "'" + fam + "'," + sys : sys;
+    v["--font-display"] = stack; v["--font-body"] = stack;
+
+    function inkOn(c) { return lum(c) > 0.5 ? text : "#FFFFFF"; }
+    function darker(c, k) { return mix(c, "#000000", k); }
+
+    var btnBg = opt("buttonBg"), btnTx = opt("buttonText"), btnHv = opt("buttonHoverBg");
+    if (btnBg) {
+      v["--btn-bg"] = btnBg; v["--btn-text"] = btnTx || inkOn(btnBg); v["--btn-hover-bg"] = btnHv || darker(btnBg, 0.85);
+    } else {
+      if (btnTx) v["--btn-text"] = btnTx;
+      if (btnHv) v["--btn-hover-bg"] = btnHv;
+    }
+    if (v["--btn-hover-bg"]) v["--btn-active-bg"] = darker(v["--btn-hover-bg"], 0.88);
+
+    var hbBg = opt("heroButtonBg"), hbTx = opt("heroButtonText");
+    if (hbBg) {
+      v["--hero-btn-bg"] = hbBg; v["--hero-btn-text"] = hbTx || inkOn(hbBg); v["--hero-btn-hover-bg"] = darker(hbBg, 0.88);
+    } else if (hbTx) v["--hero-btn-text"] = hbTx;
+
+    var headingC = opt("heading"), priceC = opt("price");
+    if (headingC) v["--heading-color"] = headingC;
+    if (priceC) v["--price-color"] = priceC;
+
+    var extra = "", scopes = {};
+    function scope(sel, bgVar, bgKey, txKey) {
+      var bgC = opt(bgKey), txC = opt(txKey);
+      if (bgC) v[bgVar] = bgC;
+      if (!bgC && !txC) return;
+      var baseBg = bgC || primary, on = txC || inkOn(baseBg);
+      scopes[sel] = { on: on, bg: baseBg };
+      extra += sel + "{--on-primary:" + on + ";--on-primary-rgb:" + rgb(on) +
+        ";--on-primary-soft:" + mix(on, baseBg, 0.8) + ";--on-primary-muted:" + mix(on, baseBg, 0.7) +
+        ";--on-primary-dim:" + mix(on, baseBg, 0.55) + "}";
+    }
+    scope(".hero", "--hero-bg", "heroBg", "heroText");
+    scope(".site-footer", "--footer-bg", "footerBg", "footerText");
+    scope(".contact-band", "--band-bg", "bandBg", "bandText");
+    scope(".admin-sidebar", "--sidebar-bg", "sidebarBg", "sidebarText");
+
+    var hdBg = opt("headerBg"), hdTx = opt("headerText");
+    if (hdBg) v["--header-bg"] = hdBg;
+    var hdInk = hdTx || (hdBg && lum(hdBg) <= 0.5 ? "#FFFFFF" : "");
+    if (hdInk) extra += ".site-header{--heading-color:" + hdInk + ";--text-2:" + mix(hdInk, hdBg || surface, 0.75) + ";--text:" + hdInk + "}";
+
+    /* أبعاد البطاقات (cardSizes) — منقولة من boot.js */
+    function cs(pl, f) {
+      var o = P.cardSizes && P.cardSizes[pl] ? P.cardSizes[pl][f] : undefined, n = (o === "" || o == null) ? NaN : Number(o);
+      var lim = /height/i.test(f) ? [100, 900] : [80, 700];
+      return (isFinite(n) && n >= lim[0] && n <= lim[1]) ? Math.round(n) : NaN;
+    }
+    function csSel(ids, tail) { return ids.split(",").map(function (q) { return "html body " + q + (tail || ""); }).join(","); }
+    var CARD_PLACES = {
+      homeProducts: { ids: "#featuredGrid,#offerGrid,#newGrid", t: "product", row: true },
+      homeCategories: { ids: "#homeCategories", t: "chip" },
+      productsPage: { ids: "#shopGrid", t: "product" },
+      categoriesPage: { ids: "#categoriesGrid", t: "catpage" }
+    };
+    Object.keys(CARD_PLACES).forEach(function (pl) {
+      var d = CARD_PLACES[pl];
+      [[false, "min-width:768px"], [true, "max-width:767px"]].forEach(function (m) {
+        var w = cs(pl, m[0] ? "mobileWidth" : "width"), h = cs(pl, m[0] ? "mobileHeight" : "height");
+        if (isNaN(w) && isNaN(h)) return;
+        var r = "", card = ">:is(.product-card,.skeleton-card)";
+        if (d.t === "product") {
+          if (!isNaN(w)) {
+            if (m[0] && d.row) r += csSel(d.ids, card) + "{flex:0 0 " + w + "px;width:" + w + "px;max-width:" + w + "px}";
+            else r += csSel(d.ids) + "{grid-template-columns:repeat(auto-fill,min(" + w + "px,100%));justify-content:center}";
+          }
+          if (!isNaN(h)) r += csSel(d.ids, card) + "{height:" + h + "px}" + csSel(d.ids, ">.product-card .product-media") + "{aspect-ratio:auto;flex:1 1 0;min-height:0}";
+        } else if (d.t === "chip") {
+          var cw = isNaN(w) ? (m[0] ? 120 : 138) : w, ch = isNaN(h) ? (m[0] ? 150 : 164) : h;
+          var ic = Math.max(36, Math.min(cw - 24, ch - 62, 220));
+          r += csSel(d.ids, ">.cat-chip") + "{flex:0 0 " + cw + "px;width:" + cw + "px;" + (isNaN(h) ? "" : "height:" + h + "px;min-height:0;") + "}" +
+            csSel(d.ids, ">.cat-chip .cat-icon") + "{width:" + ic + "px;height:" + ic + "px;min-width:" + ic + "px}" +
+            csSel(d.ids, ">.cat-chip .cat-icon svg") + "{width:" + Math.round(ic * 0.4) + "px;height:" + Math.round(ic * 0.4) + "px}";
+        } else {
+          if (!isNaN(w)) r += csSel(d.ids) + "{grid-template-columns:repeat(auto-fill,min(" + w + "px,100%));justify-content:center}";
+          if (!isNaN(h)) r += csSel(d.ids, ">.cat-main-card") + "{min-height:" + h + "px}";
+        }
+        extra += "@media(" + m[1] + "){" + r + "}";
+      });
+    });
+
+    var css = ":root:root{" + Object.keys(v).map(function (k) { return k + ":" + v[k]; }).join(";") + "}" + extra;
+
+    /* القيم الفعلية لكل منطقة (ما سيراه الزائر): تُستعمل للمصغّرات وفحص التباين وعرض "يرث من" */
+    function scopeInk(sel) { return scopes[sel] ? scopes[sel].on : onPrimary; }
+    var heading = v["--heading-color"] || primary;
+    var A = {
+      onPrimary: onPrimary,
+      header: { bg: v["--header-bg"] || surface, ink: hdInk || heading },
+      hero: { bg: v["--hero-bg"] || primary, ink: scopeInk(".hero") },
+      footer: { bg: v["--footer-bg"] || primary, ink: scopeInk(".site-footer") },
+      band: { bg: v["--band-bg"] || primary, ink: scopeInk(".contact-band") },
+      sidebar: { bg: v["--sidebar-bg"] || primary, ink: scopeInk(".admin-sidebar") },
+      btn: { bg: v["--btn-bg"] || primary, text: v["--btn-text"] || onPrimary, hover: v["--btn-hover-bg"] || secondary },
+      heroBtn: { bg: v["--hero-btn-bg"] || accent, text: v["--hero-btn-text"] || primary },
+      heading: heading, price: v["--price-color"] || primary,
+      success: v["--success"] || STATUS_DEFAULTS.success, warning: v["--warning"] || STATUS_DEFAULTS.warning, error: v["--error"] || STATUS_DEFAULTS.error
+    };
+    var explicit = {};
+    OPT_KEYS.forEach(function (k) { explicit[k] = !!opt(k); });
+    return {
+      vars: v, extra: extra, css: css, scopes: scopes, A: A, explicit: explicit,
+      C: { primary: primary, secondary: secondary, accent: accent, bg: bg, surface: surface, text: text, textMuted: muted, border: border },
+      fontFamily: fam, fontWeights: fontWeights
+    };
+  }
+
+  /* القيمة التي يرثها كل لون اختياري حين لا يُخصَّص (لعرضها في المحرّر) */
+  function inherited(R, key) {
+    var A = R.A;
+    var m = {
+      headerBg: A.header.bg, headerText: A.header.ink, heroBg: A.hero.bg, heroText: A.hero.ink, bandBg: A.band.bg, bandText: A.band.ink,
+      footerBg: A.footer.bg, footerText: A.footer.ink, sidebarBg: A.sidebar.bg, sidebarText: A.sidebar.ink,
+      buttonBg: A.btn.bg, buttonText: A.btn.text, buttonHoverBg: A.btn.hover, heroButtonBg: A.heroBtn.bg, heroButtonText: A.heroBtn.text,
+      heading: A.heading, price: A.price, success: A.success, warning: A.warning, error: A.error
+    };
+    return m[key];
+  }
+
+  /* ---------- فحص التباين: نفس عتبات tools/check-themes.js + فحوص إضافية للألوان المخصَّصة ---------- */
+  function audit(R) {
+    var C = R.C, A = R.A, X = R.explicit, out = [];
+    function add(id, label, fg, bg, min, sev, fix) {
+      var r = contrast(fg, bg);
+      out.push({ id: id, label: label, fg: fg, bg: bg, min: min, sev: sev, ratio: r, pass: r >= min, fix: fix || null });
+    }
+    add("text", "النص الأساسي على خلفية الصفحة", C.text, C.bg, 7, "fail", { key: "text", adjust: "fg" });
+    add("muted", "النص الثانوي على البطاقة", C.textMuted, C.surface, 4.5, "fail", { key: "textMuted", adjust: "fg" });
+    add("link", "الروابط (secondary) على البطاقة", C.secondary, C.surface, 4.5, "fail", { key: "secondary", adjust: "fg" });
+    add("onprimary", "النص فوق primary (تلقائي)", A.onPrimary, C.primary, 4.5, "fail", { key: "primary", adjust: "bg" });
+    add("primary", "primary على البطاقة (العناوين والأسعار)", C.primary, C.surface, 4.5, "fail", { key: "primary", adjust: "fg" });
+    if (X.heading) add("heading", "لون العناوين المخصَّص على البطاقة", A.heading, C.surface, 4.5, "fail", { key: "heading", adjust: "fg" });
+    if (X.price) add("price", "لون الأسعار المخصَّص على البطاقة", A.price, C.surface, 4.5, "fail", { key: "price", adjust: "fg" });
+    add("btn", "نص الأزرار على خلفيتها", A.btn.text, A.btn.bg, 4.5, "fail", { key: "buttonText", adjust: "fg" });
+    add("btnhover", "نص الأزرار عند التحويم", A.btn.text, A.btn.hover, 4.5, X.buttonHoverBg ? "fail" : "warn", { key: "buttonHoverBg", adjust: "bg" });
+    add("hero", "نص الإعلان (الهيرو) على خلفيته", A.hero.ink, A.hero.bg, 4.5, "fail", { key: "heroText", adjust: "fg" });
+    add("herobtn", "نص زر الإعلان على زره", A.heroBtn.text, A.heroBtn.bg, 4.5, "fail", { key: "heroButtonText", adjust: "fg" });
+    add("herobtnvis", "زر الإعلان على خلفية الإعلان (وضوح الزر)", A.heroBtn.bg, A.hero.bg, 1.8, "warn", { key: "heroButtonBg", adjust: "fg" });
+    add("heroacc", "accent على خلفية الإعلان (الشارة الصغيرة)", C.accent, A.hero.bg, 3, "warn", { key: "accent", adjust: "fg" });
+    if (X.headerBg || X.headerText) add("header", "نص الهيدر على خلفيته", A.header.ink, A.header.bg, 4.5, "fail", { key: "headerText", adjust: "fg" });
+    add("footer", "نص الفوتر على خلفيته", A.footer.ink, A.footer.bg, 4.5, "fail", { key: "footerText", adjust: "fg" });
+    add("accprim", "accent مقابل primary (خط الفوتر والشارات)", C.accent, C.primary, 1.8, "warn", { key: "accent", adjust: "fg" });
+    add("badge", "نص شارة «مميز» (primary) على accent", C.primary, C.accent, 3, "warn", { key: "accent", adjust: "bg" });
+    if (X.bandBg || X.bandText) add("band", "نص شريط التواصل على خلفيته", A.band.ink, A.band.bg, 4.5, "fail", { key: "bandText", adjust: "fg" });
+    if (X.sidebarBg || X.sidebarText) add("sidebar", "نص قائمة الأدمن الجانبية على خلفيتها", A.sidebar.ink, A.sidebar.bg, 4.5, "fail", { key: "sidebarText", adjust: "fg" });
+    add("error", "نص أبيض على لون الخطأ (شارة «عرض»)", "#FFFFFF", A.error, 4.5, "warn", { key: "error", adjust: "bg" });
+    return out;
+  }
+
+  /* اقتراح لون بديل بأقل تغيير في السطوع يحقق العتبة (يُعرض فقط ولا يُطبَّق تلقائياً) */
+  function suggest(adjustColor, fixedColor, min) {
+    var best = null;
+    ["#FFFFFF", "#000000"].forEach(function (t) {
+      for (var w = 0.02; w <= 1.0001; w += 0.02) {
+        var c = mix(t, adjustColor, Math.min(w, 1));
+        if (contrast(c, fixedColor) >= min) { if (!best || w < best.w) best = { c: c, w: w }; break; }
+      }
+    });
+    return best ? best.c : null;
+  }
+
+  /* ---------- حالة المحرّر ⇄ كائن الثيم ---------- */
+  function parseWeights(s) {
+    return String(s == null ? "" : s).split(";").map(function (x) { return parseInt(x, 10); }).filter(function (x) { return isFinite(x); });
+  }
+  function weightsStr(arr) {
+    return arr.slice().sort(function (a, b) { return a - b; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(";");
+  }
+  function stateFromTheme(T, id, mode) {
+    var C = T.colors || {}, S = {
+      mode: mode, origin: mode === "edit" ? id : null, id: id,
+      label: T.label || "", category: T.category || "", inspiredBy: T.inspiredBy || "",
+      colors: {}, on: {}, ok: {},
+      font: T.fontFamily || "", weights: parseWeights(T.fontWeights || "400;500;700"),
+      radiusCard: T.radiusCard, radiusControl: T.radiusControl,
+      containerOn: T.containerWidth != null && T.containerWidth !== "", containerWidth: T.containerWidth || 1200,
+      ratio: T.cardImageRatio || "1/1", fit: T.cardImageFit || "cover"
+    };
+    S.sizes = {};
+    PLACES.forEach(function (pl) { S.sizes[pl] = {}; SIZE_FIELDS.forEach(function (f) { var v = T.cardSizes && T.cardSizes[pl] ? T.cardSizes[pl][f] : ""; S.sizes[pl][f] = (v === "" || v == null) ? "" : String(v); }); });
+    CORE_KEYS.forEach(function (k) { S.colors[k] = C[k] != null ? String(C[k]) : DEFAULTS[k]; });
+    OPT_KEYS.forEach(function (k) {
+      var has = C[k] != null && C[k] !== "";
+      S.on[k] = has; S.colors[k] = has ? String(C[k]) : "";
+    });
+    Object.keys(S.colors).forEach(function (k) { var n = normHex(S.colors[k]); if (n) S.ok[k] = n; });
+    return S;
+  }
+  /* كائن ثيم "آمن" للمعاينة: أي لون غير صالح يُستبدل بآخر قيمة صالحة */
+  function toThemeSafe(S) {
+    var colors = {};
+    CORE_KEYS.forEach(function (k) { colors[k] = normHex(S.colors[k]) || S.ok[k] || DEFAULTS[k]; });
+    OPT_KEYS.forEach(function (k) { if (S.on[k]) { var n = normHex(S.colors[k]) || S.ok[k]; if (n) colors[k] = n; } });
+    var T = {
+      label: S.label, category: S.category, colors: colors,
+      fontFamily: String(S.font || "").trim(), fontWeights: weightsStr(S.weights.length ? S.weights : [400, 700]),
+      radiusCard: clampNum(S.radiusCard, 0, 60, 14), radiusControl: clampNum(S.radiusControl, 0, 60, 10),
+      cardImageRatio: /^\d+\s*\/\s*\d+$/.test(String(S.ratio)) ? String(S.ratio).replace(/\s+/g, "") : "1/1",
+      cardImageFit: S.fit === "contain" ? "contain" : "cover"
+    };
+    if (String(S.inspiredBy || "").trim()) T.inspiredBy = S.inspiredBy;
+    if (S.containerOn) T.containerWidth = clampNum(S.containerWidth, 900, 2000, 1200);
+    var cs = {};
+    PLACES.forEach(function (pl) { var o = {}; SIZE_FIELDS.forEach(function (f) { var n = sizeNum(S.sizes[pl][f], f); if (!isNaN(n)) o[f] = n; }); if (Object.keys(o).length) cs[pl] = o; });
+    if (Object.keys(cs).length) T.cardSizes = cs;
+    return T;
+  }
+  function clampNum(x, lo, hi, d) { x = Number(x); if (!isFinite(x)) return d; return Math.max(lo, Math.min(hi, Math.round(x))); }
+
+  /* ---------- التحقق من البنية (يمنع النسخ عند وجود خطأ) ---------- */
+  function validate(S, existingIds) {
+    var out = [];
+    function bad(m, f) { out.push({ level: "error", msg: m, field: f || "" }); }
+    function warn(m, f) { out.push({ level: "warn", msg: m, field: f || "" }); }
+    var id = String(S.id || "");
+    if (!id) bad("المعرّف فارغ.", "id");
+    else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id)) bad("المعرّف يجب أن يكون حروفاً إنجليزية صغيرة وأرقاماً وشرطات فقط (مثل my-theme) بلا مسافات أو شرطة في البداية/النهاية.", "id");
+    else if (existingIds.indexOf(id) >= 0 && !(S.mode === "edit" && id === S.origin)) bad("المعرّف «" + id + "» موجود مسبقاً في js/themes.js — اختر اسماً آخر.", "id");
+    if (!String(S.label || "").trim()) warn("الاسم العربي (label) فارغ.", "label");
+    if (!String(S.category || "").trim()) warn("نوع المتجر (category) فارغ.", "category");
+    CORE_KEYS.forEach(function (k) { if (!normHex(S.colors[k])) bad("اللون الإلزامي «" + k + "» غير صالح — الصيغة #RRGGBB.", "c:" + k); });
+    OPT_KEYS.forEach(function (k) { if (S.on[k] && !normHex(S.colors[k])) bad("اللون الاختياري «" + k + "» مفعَّل لكن قيمته غير صالحة — الصيغة #RRGGBB.", "c:" + k); });
+    var f = String(S.font || "").trim();
+    if (!f) warn("لم يُحدَّد خط (fontFamily).", "font");
+    else if (/['";{}<>]/.test(f)) bad("اسم الخط يحتوي رموزاً غير مسموحة (' \" ; { } < >).", "font");
+    if (!S.weights.length) bad("اختر وزناً واحداً على الأقل للخط.", "weights");
+    else if (FONT_WEIGHTS[f]) S.weights.forEach(function (w) { if (FONT_WEIGHTS[f].indexOf(w) < 0) bad("الخط " + f + " لا يدعم الوزن " + w + " (المتاح: " + FONT_WEIGHTS[f].join(", ") + ") — سيفشل تحميله.", "weights"); });
+    else if (f) warn("الخط «" + f + "» غير مدرج في قائمة الفحص — تأكد يدوياً من أوزانه ودعمه للعربية على fonts.google.com.", "font");
+    [["radiusCard", "استدارة البطاقات"], ["radiusControl", "استدارة الأزرار"]].forEach(function (p) {
+      var x = S[p[0]];
+      if (x === "" || x == null || !isFinite(Number(x)) || Number(x) < 0 || Number(x) > 60) bad(p[1] + " (" + p[0] + ") يجب أن تكون رقماً بين 0 و60.", p[0]);
+    });
+    if (S.containerOn) { var cw = Number(S.containerWidth); if (!isFinite(cw) || cw < 900 || cw > 2000) bad("عرض الحاوية (containerWidth) يجب أن يكون بين 900 و2000.", "containerWidth"); }
+    PLACES.forEach(function (pl) { SIZE_FIELDS.forEach(function (f) {
+      var v = S.sizes[pl][f]; if (v === "" || v == null) return;
+      var n = Number(v), l = sizeLim(f);
+      if (!isFinite(n) || n < l[0] || n > l[1]) bad("أبعاد البطاقات: " + pl + "." + f + " يجب أن تكون رقماً بين " + l[0] + " و" + l[1] + " (أو اتركها فارغة).", "sz:" + pl + ":" + f);
+    }); });
+    if (!/^\d+\s*\/\s*\d+$/.test(String(S.ratio || ""))) bad("نسبة صورة المنتج يجب أن تكون بصيغة مثل 1/1 أو 4/5.", "ratio");
+    if (S.fit !== "cover" && S.fit !== "contain") bad("ملاءمة الصورة يجب أن تكون cover أو contain.", "fit");
+    return out;
+  }
+
+  /* ---------- مولّد الكود (يطابق أسلوب js/themes.js) ---------- */
+  function q(s) { return JSON.stringify(String(s)); }
+  function code(T, id, pos) {
+    var colors = T.colors, keys = CORE_KEYS.concat(OPT_KEYS.filter(function (k) { return colors[k] != null; }));
+    var core = CORE_KEYS.map(function (k) { return k + ": " + q(colors[k]); }).join(", ");
+    var optKeys = keys.slice(CORE_KEYS.length), optLines = [];
+    for (var i = 0; i < optKeys.length; i += 4) optLines.push(optKeys.slice(i, i + 4).map(function (k) { return k + ": " + q(colors[k]); }).join(", "));
+    var colorBody = "    " + core + (optLines.length ? ",\n    " + optLines.join(",\n    ") : "");
+    var head = "  label: " + q(T.label) + ", category: " + q(T.category) + (T.inspiredBy ? ", inspiredBy: " + q(T.inspiredBy) : "") + ",\n";
+    var tail = "  fontFamily: " + q(T.fontFamily) + ", fontWeights: " + q(T.fontWeights) + ", radiusCard: " + T.radiusCard + ", radiusControl: " + T.radiusControl +
+      (T.containerWidth != null ? ", containerWidth: " + T.containerWidth : "") + ", cardImageRatio: " + q(T.cardImageRatio) + ", cardImageFit: " + q(T.cardImageFit);
+    if (T.cardSizes) tail += ",\n  cardSizes: {\n" + PLACES.filter(function (pl) { return T.cardSizes[pl]; }).map(function (pl) {
+      return "    " + pl + ": { " + SIZE_FIELDS.filter(function (f) { return T.cardSizes[pl][f] != null; }).map(function (f) { return f + ": " + T.cardSizes[pl][f]; }).join(", ") + " }";
+    }).join(",\n") + "\n  }";
+    var body = q(id) + ": {\n" + head + "  colors: {\n" + colorBody + "\n  },\n" + tail + "\n}";
+    return pos === "before" ? body + "," : "," + body;
+  }
+
+  return {
+    parse: parse, toHex: toHex, normHex: normHex, mix: mix, lum: lum, contrast: contrast,
+    CORE_KEYS: CORE_KEYS, OPT_KEYS: OPT_KEYS, DEFAULTS: DEFAULTS, FONT_WEIGHTS: FONT_WEIGHTS,
+    resolve: resolve, inherited: inherited, audit: audit, suggest: suggest,
+    parseWeights: parseWeights, weightsStr: weightsStr, stateFromTheme: stateFromTheme, toThemeSafe: toThemeSafe,
+    PLACES: PLACES, SIZE_FIELDS: SIZE_FIELDS, validate: validate, code: code
+  };
+})();
+</script>
+
+<script id="ui">
+(function () {
+  "use strict";
+  var E = ThemeEngine;
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function announce(msg) { var l = $("#live"); l.textContent = ""; setTimeout(function () { l.textContent = msg; }, 30); }
+
+  if (typeof STORE_THEMES === "undefined") {
+    $("#main").innerHTML = '<div class="empty" style="margin-top:30px"><b>تعذّر تحميل js/themes.js</b><br>افتح هذه الصفحة من داخل مجلد المشروع بحيث يكون الملف <code>js/themes.js</code> بجانبها.</div>';
+    return;
+  }
+  var THEMES = STORE_THEMES, IDS = Object.keys(THEMES);
+
+  /* ---------- أدوات النسخ ---------- */
+  function copyText(text) {
+    function fallback() {
+      return new Promise(function (res, rej) {
+        var t = document.createElement("textarea"); t.value = text; t.setAttribute("readonly", ""); t.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+        document.body.appendChild(t); t.select(); var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) {}
+        t.remove(); ok ? res() : rej(new Error("copy failed"));
+      });
+    }
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).catch(fallback);
+    return fallback();
+  }
+  function selectNode(n) { var r = document.createRange(); r.selectNodeContents(n); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+  /* نسخ مع تغذية راجعة: msgEl اختياري، preEl يُحدَّد عند الفشل ليُنسخ يدوياً */
+  function doCopy(text, btn, msgEl, preEl) {
+    copyText(text).then(function () {
+      var o = btn.getAttribute("data-label") || btn.textContent; btn.setAttribute("data-label", o); btn.textContent = "تم النسخ ✓";
+      if (msgEl) { msgEl.className = "copied-msg ok"; msgEl.textContent = "تم النسخ إلى الحافظة."; }
+      announce("تم النسخ إلى الحافظة");
+      setTimeout(function () { btn.textContent = o; if (msgEl) msgEl.textContent = ""; }, 1800);
+    }, function () {
+      if (preEl) selectNode(preEl);
+      if (msgEl) { msgEl.className = "copied-msg bad"; msgEl.textContent = "تعذّر النسخ تلقائياً — الكود محدَّد الآن، اضغط Ctrl+C (أو ⌘C)."; }
+      announce("تعذّر النسخ تلقائياً. حدّد الكود وانسخه يدوياً");
+    });
+  }
+
+  /* ---------- الخطوط ---------- */
+  function fontHref(list) { // list: [[family, "400;500;700"], …]
+    var parts = list.filter(function (x) { return x[0]; }).map(function (x) {
+      var w = String(x[1] || "400;700").replace(/[^0-9;]/g, "") || "400;700";
+      w = w.split(";").filter(Boolean).map(Number).sort(function (a, b) { return a - b; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(";");
+      return "family=" + encodeURIComponent(x[0]).replace(/%20/g, "+") + ":wght@" + w;
+    });
+    return parts.length ? "https://fonts.googleapis.com/css2?" + parts.join("&") + "&display=swap" : "";
+  }
+  (function loadGalleryFonts() {
+    var m = {};
+    IDS.forEach(function (id) {
+      var T = THEMES[id]; if (!T.fontFamily || /^system$/i.test(T.fontFamily)) return;
+      (m[T.fontFamily] = m[T.fontFamily] || {});
+      E.parseWeights(T.fontWeights || "400;500;700").forEach(function (w) { m[T.fontFamily][w] = 1; });
+    });
+    var h = fontHref(Object.keys(m).map(function (f) { return [f, Object.keys(m[f]).join(";")]; }));
+    if (h) { var l = document.createElement("link"); l.rel = "stylesheet"; l.href = h; document.head.appendChild(l); }
+  })();
+
+  /* ---------- نتائج لكل ثيم (مخزَّنة) ---------- */
+  var cache = {};
+  function info(id) {
+    if (!cache[id]) {
+      var T = THEMES[id], R = E.resolve(T), au = E.audit(R);
+      cache[id] = { T: T, R: R, au: au,
+        fails: au.filter(function (r) { return !r.pass && r.sev === "fail"; }).length,
+        warns: au.filter(function (r) { return !r.pass && r.sev === "warn"; }).length };
+    }
+    return cache[id];
+  }
+
+  /* ---------- مصغّر المتجر لبطاقات المعرض (يستعمل القيم الفعلية لكل منطقة) ---------- */
+  var SVG_IMG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16v14H4z" opacity=".3"/><circle cx="9" cy="10" r="2"/><path d="M5 18l5-5 3 3 3-4 3 6z"/></svg>';
+  function mini(id) {
+    var o = info(id), T = o.T, R = o.R, A = R.A, C = R.C, v = R.vars;
+    var rc = v["--r-card"] || "14px", rk = v["--r-ctl"] || "10px", ar = (v["--card-image-ratio"] || "1/1").replace("/", " / ");
+    var fit = v["--card-image-fit"] || "cover";
+    var font = "'" + (R.fontFamily || "Tajawal") + "',Tajawal,system-ui,sans-serif";
+    function prod(badge, bbg, btx, price) {
+      return '<div class="p" style="border-color:' + C.border + ';background:' + C.surface + ';border-radius:' + rc + '">' +
+        '<div class="im" style="aspect-ratio:' + ar + ';background:' + v["--surface-2"] + ';color:' + C.textMuted + '">' + SVG_IMG + '<span class="bd" style="background:' + bbg + ';color:' + btx + '">' + badge + '</span></div>' +
+        '<div class="pi"><div class="pn" style="color:' + C.textMuted + '">اسم المنتج</div><div class="pr" style="color:' + A.price + '">' + price + '</div>' +
+        '<span class="pb" style="background:' + A.btn.bg + ';color:' + A.btn.text + ';border-radius:' + Math.min(parseInt(rk, 10) || 0, 20) + 'px">أضف للسلة</span></div></div>';
+    }
+    return '<div class="mini" style="font-family:' + font + ';background:' + C.bg + ';color:' + C.text + '" data-fit="' + fit + '">' +
+      '<div class="h" style="background:' + A.header.bg + ';color:' + A.header.ink + ';border-color:' + C.border + '"><span class="lg">اسم المتجر</span><span class="ic"><i></i><i></i></span></div>' +
+      '<div class="hero" style="background:' + A.hero.bg + ';color:' + A.hero.ink + '"><span class="eb" style="background:' + E.mix(C.accent, A.hero.bg, 0.16) + ';color:' + C.accent + '">✨ كل ما تحتاجه</span>' +
+      '<h4 style="color:' + A.hero.ink + '">تسوّق أفضل المنتجات</h4><p>عروض مختارة بعناية</p>' +
+      '<span class="b" style="background:' + A.heroBtn.bg + ';color:' + A.heroBtn.text + ';border-radius:' + Math.min(parseInt(rk, 10) || 0, 28) + 'px">تسوق الآن</span></div>' +
+      '<div class="body"><div class="tt" style="color:' + A.heading + '">منتجات مميزة</div><div class="ps">' +
+      prod("جديد", C.secondary, "#FFFFFF", "45,000 د.ع") + prod("مميز", C.accent, C.primary, "28,500 د.ع") + '</div></div>' +
+      '<div class="f" style="background:' + A.footer.bg + ';color:' + A.footer.ink + ';border-color:' + C.accent + '">© جميع الحقوق محفوظة</div></div>';
+  }
+
+  /* ---------- إطار المعاينة: متجر حقيقي بنفس css/style.css و css/refresh.css ---------- */
+  var IC = {
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.3-4.3"/></svg>',
+    cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.3" fill="currentColor" stroke="none"/><circle cx="18" cy="20" r="1.3" fill="currentColor" stroke="none"/><path d="M2.5 3h2l2.3 12.2a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.5L21 8H6"/></svg>',
+    menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+    tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M11 3h5.5A2.5 2.5 0 0 1 19 5.5V11a2 2 0 0 1-.6 1.4l-8 8a2 2 0 0 1-2.8 0l-5-5a2 2 0 0 1 0-2.8l8-8A2 2 0 0 1 11 3Z"/><circle cx="14.5" cy="8.5" r="1.3"/></svg>',
+    shirt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4 4 7l2 3 2-1v11h8V9l2 1 2-3-4-3-2 2h-4L8 4Z"/></svg>',
+    bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 8h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-7a1.5 1.5 0 0 1-1.5-1.5L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+    box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m3.5 7 8.5-4 8.5 4-8.5 4-8.5-4Z"/><path d="M3.5 7v10l8.5 4 8.5-4V7M12 11v10"/></svg>',
+    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m4 11 8-6.5 8 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19v-8Z"/><path d="M10 20v-6h4v6"/></svg>',
+    truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2.5 6h11v10h-11z"/><path d="M13.5 10h4l3 3v3h-7z"/><circle cx="6.5" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>',
+    shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3.5 19 6v6c0 5-3 7.8-7 8.5-4-.7-7-3.5-7-8.5V6l7-2.5Z"/><path d="m9 12 2 2 4-4.2"/></svg>',
+    heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20s-7.3-4.6-9.4-9.2C1.2 7.6 3 4.5 6.2 4.1c2-.3 3.8.7 5.8 3 2-2.3 3.8-3.3 5.8-3 3.2.4 5 3.5 3.6 6.7C19.3 15.4 12 20 12 20Z"/></svg>'
+  };
+  var PH = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><rect width="400" height="400" fill="#E9E6DF"/><circle cx="140" cy="150" r="34" fill="#CFCAC0"/><path d="M40 330l120-120 70 70 60-80 70 130z" fill="#CFCAC0"/></svg>');
+  function card(badge, bcls, name, cat, price, dots, out) {
+    return '<article class="product-card"><a class="product-media"><img class="product-media-img is-loaded" src="' + PH + '" alt="">' +
+      (badge ? '<span class="badge ' + bcls + '">' + badge + '</span>' : '') + (out ? '<span class="badge badge-out-abs">غير متوفر</span>' : '') + '</a>' +
+      '<div class="product-body"><span class="product-cat">' + cat + '</span><h3 class="product-name"><a>' + name + '</a></h3>' +
+      (dots ? '<div class="product-body-colors">' + dots.map(function (c) { return '<span class="card-color-dot" style="background:' + c + '"></span>'; }).join("") + '</div>' : '') +
+      '<div class="product-foot"><span class="price">' + price + '</span><div class="product-actions"><button class="btn btn-primary"' + (out ? ' disabled' : '') + '>' + IC.cart + '<span class="btn-label">' + (out ? 'غير متوفر' : 'أضف للسلة') + '</span></button></div></div></div></article>';
+  }
+  var BODY =
+    '<div id="site-header"><header class="site-header"><div class="container header-inner">' +
+    '<a class="brand"><span style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:grid;place-items:center;font-weight:800;font-size:1.2rem">م</span><span class="brand-name">اسم المتجر<span>تسوّق بسهولة وثقة</span></span></a>' +
+    '<nav class="main-nav"><a class="active">الرئيسية</a><a>المنتجات</a><a>الأقسام</a><a>من نحن</a><a>تواصل معنا</a></nav>' +
+    '<div class="header-actions"><button type="button" class="btn-icon" aria-label="بحث">' + IC.search + '</button><a class="btn-icon cart-link" aria-label="السلة">' + IC.cart + '<span class="cart-count">2</span></a><button type="button" class="btn-icon nav-toggle" aria-label="القائمة">' + IC.menu + '</button></div>' +
+    '</div></header></div>' +
+    '<main>' +
+    '<section class="hero"><div class="hero-blob"></div><div class="container hero-inner"><div class="hero-copy">' +
+    '<div class="hero-eyebrow-free">✨ كل ما تحتاجه في مكان واحد</div><h1>تسوّق أفضل المنتجات بسهولة وثقة</h1>' +
+    '<p>مجموعة مختارة بعناية، وطلب سهل ومباشر عبر واتساب دون أي تعقيد.</p>' +
+    '<div class="hero-cta"><a class="btn btn-primary">تسوق الآن</a><a class="btn btn-outline">تصفح الأقسام</a></div>' +
+    '<div class="hero-trust"><div><strong>جودة</strong><span>منتجات مختارة</span></div><div><strong>سرعة</strong><span>توصيل سريع</span></div></div></div>' +
+    '<div class="hero-art"><div class="hero-art-default"><svg viewBox="0 0 160 160" width="120" height="120" style="color:var(--text-2)" fill="none" stroke="currentColor" stroke-width="4"><circle cx="80" cy="80" r="62"/><path d="M50 94c12 30 48 30 60 0"/><circle cx="64" cy="70" r="5" fill="currentColor" stroke="none"/><circle cx="96" cy="70" r="5" fill="currentColor" stroke="none"/></svg></div></div>' +
+    '</div></section>' +
+    '<section class="section section-categories-highlight"><div class="container"><div class="section-head"><div><span style="display:inline-block;margin-bottom:6px;font-weight:700;color:var(--accent-ink);font-size:.9rem">✨ تصفح التشكيلات</span><h2>أقسام المتجر الرئيسية</h2><p>اختر القسم المناسب لتصل لما تبحث عنه بدقة وسرعة.</p></div><a class="btn btn-outline btn-sm">عرض كل الأقسام ←</a></div>' +
+    '<div class="cat-scroller" id="homeCategories">' + [["shirt", "ملابس", IC.shirt], ["bag", "حقائب", IC.bag], ["tag", "عروض", IC.tag], ["box", "إكسسوارات", IC.box], ["home", "المنزل", IC.home]].map(function (c) { return '<a class="cat-chip"><span class="cat-icon">' + c[2] + '</span><span class="name">' + c[1] + '</span></a>'; }).join("") + '</div></div></section>' +
+    '<section class="section section-alt"><div class="container"><div class="section-head"><div><h2>منتجات مميزة</h2><p>الأكثر طلبًا من عملائنا هذا الشهر.</p></div><a class="btn btn-outline btn-sm">عرض الكل</a></div><div class="product-grid" id="featuredGrid">' +
+    card("عرض🔥", "badge-offer", "قميص كتان صيفي", "ملابس", '<span class="price-sale">35,000 د.ع</span><span class="price-old">45,000 د.ع</span>', ["#1B2230", "#B8420F", "#E9E1D0"]) +
+    card("جديد", "badge-new", "حقيبة جلد يدوية", "حقائب", "89,000 د.ع") +
+    card("مميز", "badge-featured", "ساعة كلاسيكية", "إكسسوارات", "120,000 د.ع", ["#C9A961", "#8A8F98"]) +
+    card("", "", "وسادة مريحة", "المنزل", "18,500 د.ع", null, true) +
+    '</div></div></section>' +
+    '<section class="section"><div class="container"><div class="section-head"><div><h2>لماذا تختار متجرنا؟</h2><p>نهتم بتفاصيل تجربتك في كل طلب.</p></div></div><div class="feature-grid">' +
+    [[IC.truck, "توصيل سريع وموثوق", "توصيل سريع داخل المدينة، وخلال أيام قليلة لباقي المناطق."], [IC.shield, "منتجات أصلية", "نختار منتجاتنا بعناية من مصادر موثوقة لضمان الجودة."], [IC.heart, "دعم يهتم بك", "فريقنا جاهز للمساعدة في اختيار المنتج الأنسب لك."]].map(function (f) { return '<div class="feature-card"><div class="icon">' + f[0] + '</div><h3>' + f[1] + '</h3><p>' + f[2] + '</p></div>'; }).join("") +
+    '</div></div></section>' +
+    '<section class="section section-alt"><div class="container"><h2 style="margin-bottom:14px">عناصر الواجهة</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;align-items:start">' +
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:16px;display:flex;flex-direction:column;gap:12px">' +
+    '<input type="text" placeholder="ابحث عن منتج…"><select><option>الترتيب: الأحدث</option></select>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary">زر رئيسي</button><button class="btn btn-outline">زر ثانوي</button><button class="btn btn-primary" disabled>معطّل</button></div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill pill-ok">تم التوصيل</span><span class="pill pill-warn">قيد التجهيز</span><span class="pill pill-off">ملغي</span><span class="pill pill-info">معلومة</span></div>' +
+    '<p style="margin:0;color:var(--text-2);font-size:.9rem">نص ثانوي يوضح تفاصيل المنتج، مع <a style="color:var(--secondary);font-weight:700">رابط داخل النص</a>.</p></div>' +
+    '<aside class="admin-sidebar" style="position:static;height:auto;border-radius:var(--r-card);gap:6px"><div class="brand" style="display:flex;align-items:center;gap:8px"><span class="brand-name">لوحة التحكم<span style="display:block;font-weight:400;font-size:.8rem">قائمة الأدمن</span></span></div><div style="padding:8px;border-radius:8px;background:rgba(var(--on-primary-rgb),.12);color:var(--on-primary)">الطلبات</div><div style="padding:8px;color:var(--on-primary-soft)">المنتجات</div><div style="padding:8px;color:var(--on-primary-soft)">الأقسام</div></aside>' +
+    '</div></div></section>' +
+    '<section class="section"><div class="container"><div class="section-head"><div><h2>صفحة المنتجات</h2><p>معاينة بطاقات صفحة المنتجات (shopGrid).</p></div></div><div class="product-grid" id="shopGrid">' +
+    card("جديد", "badge-new", "حذاء رياضي", "أحذية", "65,000 د.ع", ["#1B2230", "#B8420F"]) + card("", "", "حقيبة ظهر", "حقائب", "42,000 د.ع") + card("مميز", "badge-featured", "نظارة شمسية", "إكسسوارات", "30,000 د.ع") + card("", "", "قبعة صوف", "ملابس", "12,000 د.ع", ["#8A8F98"]) +
+    '</div></div></section>' +
+    '<section class="section section-alt"><div class="container"><div class="section-head"><div><h2>صفحة الأقسام</h2><p>معاينة بطاقات صفحة الأقسام (categoriesGrid).</p></div></div><div class="category-grid" id="categoriesGrid">' +
+    [["ملابس رجالية", IC.shirt, ["قمصان", "بناطيل", "جاكيتات"]], ["حقائب", IC.bag, ["يد", "ظهر"]], ["إكسسوارات", IC.box, ["ساعات", "نظارات", "أحزمة"]]].map(function (c) {
+      return '<div class="cat-main-card"><a class="cat-card-header"><div class="cat-card-img">' + c[1] + '</div><div class="cat-card-title"><h3>' + c[0] + '</h3><span>تصفح المنتجات ←</span></div></a><div class="cat-sub-list">' + c[2].map(function (x) { return '<a class="cat-sub-chip">' + x + '</a>'; }).join("") + '</div></div>';
+    }).join("") + '</div></div></section>' +
+    '<section class="section"><div class="container"><div class="contact-band"><div><h2>لديك استفسار؟ تواصل معنا مباشرة</h2><p>فريقنا متاح يوميًا للرد على استفساراتك ومساعدتك في اختيار المنتج المناسب.</p></div><div class="social-row" style="flex-wrap:wrap;justify-content:center;gap:10px"><a class="btn">واتساب</a><a class="btn">انستغرام</a></div></div></div></section>' +
+    '</main>' +
+    '<div id="site-footer"><footer class="site-footer"><div class="container"><div class="footer-grid">' +
+    '<div><div class="footer-brand"><strong>اسم المتجر</strong></div><p>تجربة تسوق بسيطة، واضحة ومباشرة.</p></div>' +
+    '<div><h4>روابط سريعة</h4><ul><li><a>الرئيسية</a></li><li><a>المنتجات</a></li><li><a>الأقسام</a></li></ul></div>' +
+    '<div><h4>الأقسام</h4><ul><li><a>ملابس</a></li><li><a>حقائب</a></li></ul></div>' +
+    '<div><h4>تواصل معنا</h4><ul><li><a>07700000000</a></li><li><a>واتساب</a></li></ul></div></div>' +
+    '<div class="footer-bottom" style="margin-top:25px;padding-top:15px;border-top:1px solid rgba(var(--on-primary-rgb),0.08);text-align:center;font-size:.82rem;color:var(--on-primary-dim)">© 2026 اسم المتجر — جميع الحقوق محفوظة.</div></div></footer></div>';
+
+  function previewDoc(R) {
+    var dir = new URL(".", location.href).href;
+    var href = R ? fontHref([[R.fontFamily, R.fontWeights]]) : "";
+    return '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="' + esc(dir) + '">' +
+      '<link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/refresh.css">' +
+      '<link id="fontlink" rel="stylesheet"' + (href ? ' href="' + esc(href) + '"' : '') + '>' +
+      '<style id="vars">' + (R ? R.css : '') + '</style></head><body>' + BODY + '</body></html>';
+  }
+
+  function PreviewFrame(host) {
+    var self = this;
+    this.host = host; this.width = 1280; this.ready = false; this.pending = null;
+    this.scaler = document.createElement("div"); this.scaler.className = "scaler";
+    this.ifr = document.createElement("iframe"); this.ifr.title = "معاينة المتجر بالثيم الحالي";
+    this.ifr.setAttribute("sandbox", "allow-same-origin");   // بلا سكربتات داخل المعاينة
+    this.scaler.appendChild(this.ifr); host.appendChild(this.scaler);
+    this.ifr.addEventListener("load", function () { self.ready = true; if (self.pending) { var p = self.pending; self.pending = null; self.apply(p); } });
+    this.ifr.srcdoc = previewDoc();
+    if (window.ResizeObserver) new ResizeObserver(function () { self.fit(); }).observe(host);
+    window.addEventListener("resize", function () { self.fit(); });
+  }
+  PreviewFrame.prototype.apply = function (R) {
+    try {
+      var d = this.ifr.contentDocument;
+      d.getElementById("vars").textContent = R.css;
+      var href = fontHref([[R.fontFamily, R.fontWeights]]), fl = d.getElementById("fontlink");
+      if (href) { if (fl.getAttribute("href") !== href) fl.setAttribute("href", href); } else fl.removeAttribute("href");
+    } catch (e) { this.ready = false; this.pending = R; this.ifr.srcdoc = previewDoc(R); }   // احتياطي إن مُنع الوصول لمحتوى الإطار
+  };
+  PreviewFrame.prototype.update = function (R) { if (this.ready) this.apply(R); else this.pending = R; };
+  PreviewFrame.prototype.setWidth = function (w) { this.width = w; this.fit(); };
+  PreviewFrame.prototype.fit = function () {
+    var hw = this.host.clientWidth - 20, hh = this.host.clientHeight - 28;
+    if (hw <= 0 || hh <= 0) return;
+    var s = Math.min(1, hw / this.width);
+    this.scaler.style.width = this.width + "px";
+    this.scaler.style.height = Math.max(320, hh / s) + "px";
+    this.scaler.style.transform = "scale(" + s + ")";
+  };
+
+  /* ---------- المعرض ---------- */
+  var catSet = {};
+  IDS.forEach(function (id) { String(THEMES[id].category || "").split("/").forEach(function (c) { c = c.trim(); if (c) catSet[c] = 1; }); });
+  $("#fcat").innerHTML = '<option value="">كل الفئات</option>' + Object.keys(catSet).map(function (c) { return '<option>' + esc(c) + '</option>'; }).join("");
+
+  function hay(id) { var T = THEMES[id], C = T.colors || {}; return [id, T.label, T.category, T.inspiredBy, T.fontFamily].concat(Object.keys(C).map(function (k) { return C[k]; })).join(" ").toLowerCase(); }
+  function cardHtml(id) {
+    var o = info(id), T = o.T, C = T.colors || {};
+    var pal = E.CORE_KEYS.map(function (k) { return '<i title="' + k + ' ' + esc(C[k]) + '" style="background:' + esc(C[k]) + '"></i>'; }).join("") +
+      E.OPT_KEYS.filter(function (k) { return C[k]; }).map(function (k) { return '<i class="opt" title="' + k + ' ' + esc(C[k]) + '" style="background:' + esc(C[k]) + '"></i>'; }).join("");
+    var optN = E.OPT_KEYS.filter(function (k) { return C[k] && k !== "border"; }).length;
+    var qc = o.fails ? '<span class="chip bad">✗ ' + o.fails + ' فشل تباين</span>' : o.warns ? '<span class="chip warn">! ' + o.warns + ' تنبيه</span>' : '<span class="chip ok">✓ تباين سليم</span>';
+    return '<article class="tcard" data-id="' + esc(id) + '"><div class="thumb">' + mini(id) + '</div><div class="tinfo">' +
+      '<div class="trow"><b>' + esc(T.label || id) + '</b><code>' + esc(id) + '</code></div>' +
+      '<div class="meta">' + esc(T.category || "") + (T.inspiredBy ? ' — ' + esc(T.inspiredBy) : '') + '</div>' +
+      '<div class="pal" role="img" aria-label="لوحة ألوان ' + esc(T.label || id) + '">' + pal + '</div>' +
+      '<div class="chips">' + qc +
+      '<span class="chip" title="الخط والأوزان">' + esc(T.fontFamily || "system") + ' · ' + esc(T.fontWeights || "400;500;700") + '</span>' +
+      '<span class="chip" title="استدارة البطاقات / الأزرار">استدارة ' + esc(T.radiusCard) + '/' + esc(T.radiusControl) + '</span>' +
+      '<span class="chip" title="نسبة صورة المنتج وملاءمتها">' + esc(T.cardImageRatio) + ' · ' + esc(T.cardImageFit) + '</span>' +
+      (optN ? '<span class="chip" title="ألوان اختيارية محددة في الثيم">' + optN + ' ألوان مخصَّصة</span>' : '') + '</div>' +
+      '<div class="acts"><button type="button" class="btn sm dark" data-a="prev">معاينة</button><button type="button" class="btn sm" data-a="edit">فتح في المحرر</button>' +
+      '<button type="button" class="btn sm" data-a="dup">نسخ كثيم جديد</button><button type="button" class="btn sm" data-a="preset" title="يضع سطر preset في الحافظة">نسخ preset</button></div></div></article>';
+  }
+  function renderGallery() {
+    var q = $("#q").value.trim().toLowerCase(), cat = $("#fcat").value, sort = $("#fsort").value;
+    var list = IDS.filter(function (id) {
+      if (cat && String(THEMES[id].category || "").split("/").map(function (c) { return c.trim(); }).indexOf(cat) < 0) return false;
+      return !q || hay(id).indexOf(q) >= 0;
+    });
+    if (sort === "label") list.sort(function (a, b) { return String(THEMES[a].label).localeCompare(String(THEMES[b].label), "ar"); });
+    else if (sort === "cat") list.sort(function (a, b) { return String(THEMES[a].category).localeCompare(String(THEMES[b].category), "ar"); });
+    else if (sort === "quality") list.sort(function (a, b) { return (info(a).fails - info(b).fails) || (info(a).warns - info(b).warns); });
+    $("#galleryGrid").innerHTML = list.length ? list.map(cardHtml).join("") : '<div class="empty" style="grid-column:1/-1">لا توجد ثيمات مطابقة للبحث.</div>';
+    $("#gcount").textContent = list.length + " من " + IDS.length + " ثيم";
+  }
+  ["input", "change"].forEach(function (ev) { $("#q").addEventListener(ev, renderGallery); $("#fcat").addEventListener(ev, renderGallery); $("#fsort").addEventListener(ev, renderGallery); });
+  $("#galleryGrid").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-a]"); if (!b) return;
+    var id = b.closest(".tcard").getAttribute("data-id"), a = b.getAttribute("data-a");
+    if (a === "prev") openPreview(id);
+    else if (a === "edit") openEdit(id);
+    else if (a === "dup") openDup(id);
+    else if (a === "preset") {
+      copyText('preset: "' + id + '",').then(function () { var o = b.getAttribute("data-label") || b.textContent; b.setAttribute("data-label", o); b.textContent = "تم النسخ ✓"; announce("تم نسخ سطر preset للثيم " + id); setTimeout(function () { b.textContent = o; }, 1600); },
+        function () { announce("تعذّر النسخ تلقائياً"); b.textContent = "تعذّر النسخ"; setTimeout(function () { b.textContent = "نسخ preset"; }, 1600); });
+    }
+  });
+
+  /* ---------- حوار المعاينة ---------- */
+  var dlg = $("#dlg"), dlgFrame = null, dlgId = null;
+  function bindSeg(seg, fn) {
+    seg.addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-w]"); if (!b) return;
+      $$("button", seg).forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      fn(+b.getAttribute("data-w"));
+    });
+  }
+  function openPreview(id) {
+    dlgId = id; var o = info(id);
+    $("#dlgTitle").textContent = o.T.label || id; $("#dlgId").textContent = id;
+    $("#dlgStore").href = "index.html?theme=" + encodeURIComponent(id);
+    if (!dlgFrame) { dlgFrame = new PreviewFrame($("#dlgHost")); bindSeg($("#dlgSeg"), function (w) { dlgFrame.setWidth(w); }); }
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+    requestAnimationFrame(function () { dlgFrame.update(o.R); dlgFrame.fit(); });
+  }
+  $("#dlgClose").addEventListener("click", function () { dlg.close(); });
+  dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+  $("#dlgEdit").addEventListener("click", function () { var id = dlgId; dlg.close(); openEdit(id); });
+  $("#dlgDup").addEventListener("click", function () { var id = dlgId; dlg.close(); openDup(id); });
+
+  /* ==================== المحرّر ==================== */
+  var COLOR_GROUPS = [
+    { id: "g-main", title: "الألوان الأساسية", open: true, rows: [
+      ["primary", "الأساسي", "الأزرار والفوتر والإعلان والعناوين (الافتراضي)"], ["secondary", "الثانوي", "الروابط وحالة التركيز وشارة «جديد»"], ["accent", "التمييز", "الشارات والتفاصيل الصغيرة وحدّ الفوتر"]] },
+    { id: "g-surf", title: "الخلفيات والأسطح", open: true, rows: [
+      ["bg", "خلفية الصفحة", "خلف كل الأقسام"], ["surface", "البطاقات والحقول", "بطاقات المنتجات والنوافذ"], ["border", "الحدود والفواصل", "إطارات البطاقات والخطوط"]] },
+    { id: "g-text", title: "النصوص", open: true, rows: [
+      ["text", "النص الأساسي", "الفقرات والمحتوى"], ["textMuted", "النص الثانوي", "الوصف والتسميات الخافتة"],
+      ["heading", "العناوين", "اختياري — يرث primary"], ["price", "الأسعار", "اختياري — يرث primary"]] },
+    { id: "g-head", title: "الهيدر", rows: [["headerBg", "خلفية الهيدر", "اختياري"], ["headerText", "نص الهيدر", "اختياري — يُحسب تلقائياً"]] },
+    { id: "g-btn", title: "الأزرار وحالاتها", rows: [["buttonBg", "خلفية الأزرار", "اختياري"], ["buttonText", "نص الأزرار", "اختياري"], ["buttonHoverBg", "الأزرار عند التحويم", "اختياري"]] },
+    { id: "g-hero", title: "الإعلان (الهيرو)", rows: [["heroBg", "خلفية الإعلان", "اختياري"], ["heroText", "نص الإعلان", "اختياري"], ["heroButtonBg", "زر «تسوق الآن»", "اختياري"], ["heroButtonText", "نص زر الإعلان", "اختياري"]] },
+    { id: "g-foot", title: "الفوتر وشريط التواصل", rows: [["footerBg", "خلفية الفوتر", "اختياري"], ["footerText", "نص الفوتر", "اختياري"], ["bandBg", "خلفية شريط التواصل", "اختياري"], ["bandText", "نص شريط التواصل", "اختياري"]] },
+    { id: "g-side", title: "لوحة الأدمن", rows: [["sidebarBg", "خلفية القائمة الجانبية", "اختياري"], ["sidebarText", "نص القائمة الجانبية", "اختياري"]] },
+    { id: "g-stat", title: "ألوان الحالة", rows: [["success", "نجاح", "اختياري"], ["warning", "تحذير", "اختياري"], ["error", "خطأ", "اختياري"]] }
+  ];
+  var INH_SRC = {
+    headerBg: "لون البطاقات (surface)", headerText: "تلقائي: أبيض إن كان الهيدر داكناً وإلا لون العناوين", heroBg: "primary", heroText: "تلقائي حسب سطوع الخلفية",
+    bandBg: "primary", bandText: "تلقائي حسب سطوع الخلفية", footerBg: "primary", footerText: "تلقائي حسب سطوع الخلفية", sidebarBg: "primary", sidebarText: "تلقائي حسب سطوع الخلفية",
+    buttonBg: "primary", buttonText: "تلقائي حسب سطوع الزر", buttonHoverBg: "secondary (أو أغمق من خلفية الأزرار إن خصّصتها)",
+    heroButtonBg: "accent", heroButtonText: "تلقائي (primary إن لم تُخصَّص خلفية الزر)", heading: "primary", price: "primary",
+    success: "القيمة الافتراضية للقالب", warning: "القيمة الافتراضية للقالب", error: "القيمة الافتراضية للقالب"
+  };
+  var BLANK = { label: "ثيمي الجديد", category: "عام", colors: E.DEFAULTS, fontFamily: "Tajawal", fontWeights: "400;500;700", radiusCard: 14, radiusControl: 10, cardImageRatio: "1/1", cardImageFit: "cover" };
+
+  var S, snapStr = "", frame, state = null, codePos = "after", raf = 0, openMap = {};
+  function uniqueId(b) { var id = b, n = 2; while (IDS.indexOf(id) >= 0) id = b + "-" + (n++); return id; }
+  function isDirty() { return JSON.stringify(S) !== snapStr; }
+  function confirmDiscard() { return !isDirty() || confirm("لديك تعديلات في المحرّر لم تنسخها بعد. هل تريد استبدالها؟"); }
+  function load(st) { S = st; snapStr = JSON.stringify(S); buildControls(); refresh(); }
+  function openEdit(id) { if (!confirmDiscard()) return; var st = E.stateFromTheme(THEMES[id], id, "edit"); load(st); show("studio"); announce("فُتح الثيم " + id + " للتعديل"); }
+  function openDup(id) {
+    if (!confirmDiscard()) return;
+    var st = E.stateFromTheme(THEMES[id], uniqueId(id + "-copy"), "new"); st.label = (THEMES[id].label || id) + " (نسخة)"; st.base = id;
+    load(st); show("studio"); announce("أُنشئت نسخة جديدة من " + id);
+  }
+  function openBlank() { if (!confirmDiscard()) return; load(E.stateFromTheme(BLANK, uniqueId("my-theme"), "new")); show("studio"); }
+
+  var SIZE_PLACES = [["homeProducts", "منتجات الصفحة الرئيسية", "المميزة والعروض والجديدة"], ["homeCategories", "أقسام الصفحة الرئيسية", "شريط الأقسام"], ["productsPage", "صفحة المنتجات", "شبكة المنتجات"], ["categoriesPage", "صفحة الأقسام", "الطول هنا حدّ أدنى لأن البطاقة تتمدد بمحتواها"]];
+  function sizesGroupHtml() {
+    var open = openMap["g-sizes"] != null ? openMap["g-sizes"] : E.PLACES.some(function (pl) { return E.SIZE_FIELDS.some(function (f) { return S.sizes[pl][f] !== ""; }); });
+    function inp(pl, f, lb, ph) {
+      return '<div class="fld"><label for="sz-' + pl + '-' + f + '">' + lb + '</label><input class="inp" type="number" inputmode="numeric" id="sz-' + pl + '-' + f + '" data-sz="' + pl + '.' + f + '" data-f="sz:' + pl + ':' + f + '" placeholder="' + ph + '" value="' + esc(S.sizes[pl][f]) + '"><span class="err" data-f="sz:' + pl + ':' + f + '" hidden></span></div>';
+    }
+    return '<details class="grp" id="g-sizes"' + (open ? ' open' : '') + '><summary>أبعاد البطاقات<small>اختياري — بالبكسل</small></summary><div class="grp-body">' +
+      '<div class="hint" style="font-size:.8rem;color:var(--mut)">اتركها فارغة ليبقى الشكل الأصلي المتجاوب. العرض 80–700 والطول 100–900. حقول الجوال تُطبَّق حتى عرض 767px (جرّب زر «جوال» في المعاينة).</div>' +
+      SIZE_PLACES.map(function (p) {
+        return '<div class="sub-t">' + p[1] + ' <span style="font-weight:400">— ' + p[2] + '</span></div>' +
+          '<div class="two">' + inp(p[0], "width", "العرض (حاسوب)", "تلقائي") + inp(p[0], "height", "الطول (حاسوب)", "تلقائي") + '</div>' +
+          '<div class="two">' + inp(p[0], "mobileWidth", "العرض (جوال)", "تلقائي") + inp(p[0], "mobileHeight", "الطول (جوال)", "تلقائي") + '</div>';
+      }).join("") + '</div></details>';
+  }
+  function colorRow(k, label, hint, optional) {
+    var id = "cp-" + k;
+    return '<div class="crow" data-row="' + k + '"><div class="nm">' +
+      (optional ? '<label><input type="checkbox" data-on="' + k + '"><span>' + label + ' <small style="display:inline">(تخصيص)</small></span></label>' : '<span class="lb">' + label + '</span>') +
+      '<small>' + esc(hint) + ' · <code>' + k + '</code></small></div>' +
+      '<div class="ctl"><input type="color" id="' + id + '" data-k="' + k + '" aria-label="منتقي لون ' + label + '">' +
+      '<input type="text" class="inp hex" data-hex="' + k + '" data-f="c:' + k + '" dir="ltr" maxlength="9" spellcheck="false" autocomplete="off" aria-label="قيمة ' + label + ' بصيغة hex" placeholder="#RRGGBB"></div>' +
+      (optional ? '<div class="inh" data-inh="' + k + '"></div>' : '') +
+      '<div class="err" data-f="c:' + k + '" hidden></div></div>';
+  }
+  function buildControls() {
+    $$("details.grp").forEach(function (d) { openMap[d.id] = d.open; });
+    var h = '';
+    h += '<details class="grp" id="g-ident"' + (openMap["g-ident"] !== false ? ' open' : '') + '><summary>هوية الثيم</summary><div class="grp-body">' +
+      '<div class="fld"><label for="f-id">المعرّف (مفتاح الكائن)</label><input class="inp ltr" id="f-id" data-f="id" dir="ltr" spellcheck="false" autocomplete="off" value="' + esc(S.id) + '"><span class="hint">حروف إنجليزية صغيرة وأرقام وشرطات، مثل <code>my-theme</code>. هو الاسم الذي تكتبه في <code>theme.preset</code>.</span><span class="err" data-f="id" hidden></span></div>' +
+      '<div class="two"><div class="fld"><label for="f-label">الاسم الظاهر (label)</label><input class="inp" id="f-label" data-f="label" value="' + esc(S.label) + '"><span class="err" data-f="label" hidden></span></div>' +
+      '<div class="fld"><label for="f-cat">الفئة (category)</label><input class="inp" id="f-cat" data-f="category" list="catlist" value="' + esc(S.category) + '"><datalist id="catlist">' + Object.keys(catSet).map(function (c) { return '<option value="' + esc(c) + '">'; }).join("") + '</datalist><span class="err" data-f="category" hidden></span></div></div>' +
+      '<div class="fld"><label for="f-insp">الوصف أو الإلهام (inspiredBy) — اختياري</label><input class="inp" id="f-insp" value="' + esc(S.inspiredBy) + '"><span class="hint">للعرض في المعرض فقط، لا يؤثر على المتجر.</span></div></div></details>';
+    COLOR_GROUPS.forEach(function (g) {
+      var anyOn = g.rows.some(function (r) { return S.on[r[0]]; });
+      var isOpen = openMap[g.id] != null ? openMap[g.id] : (g.open || anyOn);
+      h += '<details class="grp" id="' + g.id + '"' + (isOpen ? ' open' : '') + '><summary>' + g.title + '<small>' + (g.rows.some(function (r) { return E.OPT_KEYS.indexOf(r[0]) >= 0; }) ? 'اللون المخصَّص يتغلب على الموروث' : 'إلزامية') + '</small></summary><div class="grp-body">' +
+        g.rows.map(function (r) { return colorRow(r[0], r[1], r[2], E.OPT_KEYS.indexOf(r[0]) >= 0); }).join("") + '</div></details>';
+    });
+    h += '<details class="grp" id="g-type"' + (openMap["g-type"] !== false ? ' open' : '') + '><summary>الخط والشكل</summary><div class="grp-body">' +
+      '<div class="fld"><label for="f-font">الخط (fontFamily)</label><select class="inp" id="f-font">' +
+      Object.keys(E.FONT_WEIGHTS).map(function (f) { return '<option value="' + esc(f) + '">' + esc(f) + '</option>'; }).join("") + '<option value="__other">خط آخر من Google Fonts…</option></select>' +
+      '<input class="inp ltr" id="f-font2" data-f="font" dir="ltr" placeholder="اكتب اسم الخط كما في Google Fonts" hidden><span class="err" data-f="font" hidden></span></div>' +
+      '<div class="fld"><span class="lb">الأوزان (fontWeights)</span><div class="wts" id="f-wts"></div><span class="hint">تظهر الأوزان التي يدعمها الخط فقط — وزن غير مدعوم يُفشل تحميله.</span><span class="err" data-f="weights" hidden></span></div>' +
+      '<div class="sub-t">الشكل</div>' +
+      '<div class="fld"><label for="f-rc">استدارة البطاقات (radiusCard)</label><div class="rng"><input type="range" id="f-rc" min="0" max="60" step="1"><input class="inp" type="number" id="f-rcn" data-f="radiusCard" min="0" max="60"></div><span class="err" data-f="radiusCard" hidden></span></div>' +
+      '<div class="fld"><label for="f-rk">استدارة الأزرار والحقول (radiusControl)</label><div class="rng"><input type="range" id="f-rk" min="0" max="60" step="1"><input class="inp" type="number" id="f-rkn" data-f="radiusControl" min="0" max="60"></div><span class="err" data-f="radiusControl" hidden></span></div>' +
+      '<div class="two"><div class="fld"><label for="f-ratio">نسبة صورة المنتج</label><select class="inp" id="f-ratio"><option>1/1</option><option>4/5</option><option>3/4</option><option>4/3</option><option value="__other">أخرى…</option></select><input class="inp ltr" id="f-ratio2" data-f="ratio" dir="ltr" placeholder="مثل 16/9" hidden><span class="err" data-f="ratio" hidden></span></div>' +
+      '<div class="fld"><label for="f-fit">ملاءمة الصورة</label><select class="inp" id="f-fit"><option value="cover">cover — تملأ الإطار</option><option value="contain">contain — تظهر كاملة</option></select></div></div>' +
+      '<div class="fld"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="f-cwon"> تحديد عرض الحاوية (containerWidth) — اختياري</label><input class="inp" type="number" id="f-cw" data-f="containerWidth" min="900" max="2000" step="10"><span class="hint">بين 900 و2000. عند عدم التحديد يستعمل المتجر قيمته الافتراضية.</span><span class="err" data-f="containerWidth" hidden></span></div>' +
+      '</div></details>';
+    h += sizesGroupHtml();
+    $("#controls").innerHTML = h;
+    // ملء القيم
+    E.CORE_KEYS.concat(E.OPT_KEYS).forEach(function (k) {
+      var hx = $('[data-hex="' + k + '"]'); if (!hx) return;
+      var cb = $('[data-on="' + k + '"]'); if (cb) cb.checked = !!S.on[k];
+      hx.value = S.colors[k] || ""; var n = E.normHex(S.colors[k]); if (n) $('[data-k="' + k + '"]').value = n.toLowerCase();
+      setRowEnabled(k);
+    });
+    var known = !!E.FONT_WEIGHTS[S.font];
+    $("#f-font").value = known ? S.font : "__other"; $("#f-font2").hidden = known; $("#f-font2").value = known ? "" : S.font;
+    renderWeights();
+    $("#f-rc").value = $("#f-rcn").value = S.radiusCard; $("#f-rk").value = $("#f-rkn").value = S.radiusControl;
+    var std = ["1/1", "4/5", "3/4", "4/3"].indexOf(S.ratio) >= 0;
+    $("#f-ratio").value = std ? S.ratio : "__other"; $("#f-ratio2").hidden = std; $("#f-ratio2").value = std ? "" : S.ratio;
+    $("#f-fit").value = S.fit; $("#f-cwon").checked = !!S.containerOn; $("#f-cw").value = S.containerWidth; $("#f-cw").disabled = !S.containerOn;
+    // لافتة الوضع
+    var bn = $("#banner");
+    if (S.mode === "edit") { bn.hidden = false; bn.innerHTML = '<span aria-hidden="true">✎</span><span>تعديل الثيم الموجود «<b class="ltr">' + esc(S.origin) + '</b>». الكود الناتج <b>يستبدل</b> كتلته الحالية في <code>js/themes.js</code> — لا تضفه كمفتاح ثانٍ. لن يتغيّر الملف إلا إذا لصقته أنت.</span>'; }
+    else if (S.base) { bn.hidden = false; bn.innerHTML = '<span aria-hidden="true">⧉</span><span>ثيم جديد مبني على نسخة من «<b class="ltr">' + esc(S.base) + '</b>» — الثيم الأصلي لم يتغيّر.</span>'; }
+    else bn.hidden = true;
+    $("#baseSel").innerHTML = '<option value="">— اختر ثيماً —</option>' + IDS.map(function (id) { return '<option value="' + esc(id) + '">' + esc(THEMES[id].label || id) + ' (' + esc(id) + ')</option>'; }).join("");
+  }
+  function setRowEnabled(k) {
+    var cb = $('[data-on="' + k + '"]'), on = cb ? cb.checked : true;
+    $('[data-k="' + k + '"]').disabled = !on; $('[data-hex="' + k + '"]').disabled = !on;
+  }
+  function renderWeights() {
+    var list = E.FONT_WEIGHTS[S.font] || [300, 400, 500, 600, 700, 800];
+    $("#f-wts").innerHTML = list.map(function (w) { return '<label><input type="checkbox" data-w="' + w + '"' + (S.weights.indexOf(w) >= 0 ? ' checked' : '') + '>' + w + '</label>'; }).join("");
+  }
+  function syncInherited(R) {
+    E.OPT_KEYS.forEach(function (k) {
+      var inh = $('[data-inh="' + k + '"]'); if (!inh) return;
+      if (S.on[k]) { inh.hidden = true; return; }
+      var v = E.inherited(R, k), hx = $('[data-hex="' + k + '"]'), cp = $('[data-k="' + k + '"]');
+      inh.hidden = false; inh.innerHTML = '<i style="background:' + esc(v) + '"></i><span>يرث <b class="ltr">' + esc(v) + '</b> — ' + esc(INH_SRC[k]) + '</span>';
+      if (hx !== document.activeElement) hx.value = v; cp.value = String(v).toLowerCase();
+    });
+  }
+  function showFieldErrors(issues) {
+    $$("#controls .err").forEach(function (e) { e.hidden = true; e.textContent = ""; });
+    $$("#controls [data-f]").forEach(function (e) { if (e.classList.contains("inp")) { e.classList.remove("invalid"); e.removeAttribute("aria-invalid"); } });
+    issues.forEach(function (it) {
+      if (!it.field) return;
+      var er = $('#controls .err[data-f="' + it.field + '"]');
+      if (er && er.hidden) { er.hidden = false; er.textContent = (it.level === "error" ? "✗ " : "! ") + it.msg; if (it.level === "warn") er.style.color = "var(--warn)"; else er.style.color = ""; }
+      if (it.level === "error") $$('#controls .inp[data-f="' + it.field + '"]').forEach(function (e) { e.classList.add("invalid"); e.setAttribute("aria-invalid", "true"); });
+    });
+  }
+
+  /* ----- أحداث عناصر التحكم (تفويض) ----- */
+  var ctl = $("#controls");
+  ctl.addEventListener("input", function (e) {
+    var t = e.target, k;
+    if ((k = t.getAttribute("data-k"))) { var v = t.value.toUpperCase(); S.colors[k] = v; S.ok[k] = v; $('[data-hex="' + k + '"]').value = v; }
+    else if ((k = t.getAttribute("data-hex"))) { S.colors[k] = t.value.trim(); var n = E.normHex(t.value); if (n) { S.ok[k] = n; $('[data-k="' + k + '"]').value = n.toLowerCase(); } }
+    else if (t.id === "f-id") S.id = t.value.trim();
+    else if (t.id === "f-label") S.label = t.value;
+    else if (t.id === "f-cat") S.category = t.value;
+    else if (t.id === "f-insp") S.inspiredBy = t.value;
+    else if (t.id === "f-font2") { S.font = t.value.trim(); renderWeights(); }
+    else if (t.id === "f-rc" || t.id === "f-rcn") { S.radiusCard = t.value; $("#f-rc").value = $("#f-rcn").value = t.value; }
+    else if (t.id === "f-rk" || t.id === "f-rkn") { S.radiusControl = t.value; $("#f-rk").value = $("#f-rkn").value = t.value; }
+    else if (t.id === "f-ratio2") S.ratio = t.value.trim();
+    else if (t.id === "f-cw") S.containerWidth = t.value;
+    else if (t.hasAttribute("data-sz")) { var pf = t.getAttribute("data-sz").split("."); S.sizes[pf[0]][pf[1]] = t.value.trim(); }
+    else return;
+    refresh();
+  });
+  ctl.addEventListener("change", function (e) {
+    var t = e.target, k;
+    if ((k = t.getAttribute("data-on"))) {
+      if (t.checked) {
+        var R = E.resolve(E.toThemeSafe(S));
+        if (!E.normHex(S.colors[k])) S.colors[k] = E.inherited(R, k);
+        S.ok[k] = E.normHex(S.colors[k]); S.on[k] = true;
+        $('[data-hex="' + k + '"]').value = S.colors[k]; $('[data-k="' + k + '"]').value = S.ok[k].toLowerCase();
+      } else S.on[k] = false;
+      setRowEnabled(k);
+    }
+    else if ((k = t.getAttribute("data-hex"))) { var n = E.normHex(t.value); if (n) { t.value = n; S.colors[k] = n; } }
+    else if (t.id === "f-font") {
+      if (t.value === "__other") { $("#f-font2").hidden = false; $("#f-font2").focus(); S.font = $("#f-font2").value.trim(); }
+      else {
+        $("#f-font2").hidden = true; S.font = t.value;
+        var sup = E.FONT_WEIGHTS[S.font], kept = S.weights.filter(function (w) { return sup.indexOf(w) >= 0; });
+        if (kept.length !== S.weights.length) announce("أُزيلت الأوزان التي لا يدعمها الخط " + S.font);
+        S.weights = kept.length ? kept : [400, 700].filter(function (w) { return sup.indexOf(w) >= 0; });
+      }
+      renderWeights();
+    }
+    else if (t.hasAttribute("data-w")) { var w = +t.getAttribute("data-w"), i = S.weights.indexOf(w); if (t.checked && i < 0) S.weights.push(w); if (!t.checked && i >= 0) S.weights.splice(i, 1); }
+    else if (t.id === "f-ratio") { if (t.value === "__other") { $("#f-ratio2").hidden = false; $("#f-ratio2").focus(); S.ratio = $("#f-ratio2").value.trim(); } else { $("#f-ratio2").hidden = true; S.ratio = t.value; } }
+    else if (t.id === "f-fit") S.fit = t.value;
+    else if (t.id === "f-cwon") { S.containerOn = t.checked; $("#f-cw").disabled = !t.checked; }
+    else return;
+    refresh();
+  });
+  ctl.addEventListener("toggle", function (e) { if (e.target.id) openMap[e.target.id] = e.target.open; }, true);
+  $("#baseSel").addEventListener("change", function () { var v = this.value; this.value = ""; if (v) openDup(v); });
+  $("#btnReset").addEventListener("click", function () { if (isDirty() && !confirm("استرجاع القيم التي كانت عند فتح الثيم؟ ستضيع تعديلاتك الحالية.")) return; S = JSON.parse(snapStr); buildControls(); refresh(); announce("تم استرجاع القيم الأصلية"); });
+  $("#btnNewTheme").addEventListener("click", openBlank);
+
+  /* ----- تبويبات المرحلة اليمنى ----- */
+  var TABS = ["prev", "qual", "code"];
+  function selectTab(n, focus) {
+    TABS.forEach(function (t) {
+      var on = t === n, tb = $("#tab-" + t);
+      tb.setAttribute("aria-selected", on ? "true" : "false"); tb.tabIndex = on ? 0 : -1;
+      $("#p-" + t).classList.toggle("on", on);
+      if (on && focus) tb.focus();
+    });
+    $("#devWrap").style.display = n === "prev" ? "" : "none";
+    if (n === "prev") requestAnimationFrame(function () { frame.fit(); });
+  }
+  TABS.forEach(function (t, i) {
+    var b = $("#tab-" + t);
+    b.addEventListener("click", function () { selectTab(t); });
+    b.addEventListener("keydown", function (e) {
+      var d = e.key === "ArrowLeft" ? 1 : e.key === "ArrowRight" ? -1 : 0;     // الاتجاه RTL
+      if (e.key === "Home") { selectTab(TABS[0], true); e.preventDefault(); }
+      else if (e.key === "End") { selectTab(TABS[2], true); e.preventDefault(); }
+      else if (d) { selectTab(TABS[(i + d + 3) % 3], true); e.preventDefault(); }
+    });
+  });
+
+  /* ----- تبويب الفحص ----- */
+  function renderQual() {
+    var st = state, errs = st.issues.filter(function (i) { return i.level === "error"; }), wr = st.issues.filter(function (i) { return i.level === "warn"; });
+    var fails = st.au.filter(function (r) { return !r.pass && r.sev === "fail"; }), cw = st.au.filter(function (r) { return !r.pass && r.sev === "warn"; });
+    var cls, head, sub = "";
+    if (errs.length) { cls = "bad"; head = "البنية غير جاهزة: " + errs.length + " خطأ يمنع النسخ"; sub = "أصلح الأخطاء المعلَّمة بالأحمر في المحرّر."; }
+    else if (fails.length) { cls = "bad"; head = "الكود جاهز للنسخ لكن فيه " + fails.length + " فشل تباين"; sub = "سيعدّها tools/check-themes.js عيوباً (✗). لم نغيّر ألوانك — راجع الاقتراحات أدناه."; }
+    else if (cw.length || wr.length) { cls = "warn"; head = "ثيم سليم مع " + (cw.length + wr.length) + " تنبيه"; sub = "التنبيهات جمالية ولا تمنع الاستخدام."; }
+    else { cls = "ok"; head = "ثيم سليم: كل الفحوص ناجحة"; }
+    var h = '<div class="status ' + cls + '"><span aria-hidden="true">' + (cls === "ok" ? "✓" : cls === "warn" ? "!" : "✗") + '</span><div>' + head + (sub ? '<small>' + sub + '</small>' : '') + '</div></div>';
+    if (st.issues.length) h += '<div><h3>التحقق من البنية</h3><ul class="vlist">' + st.issues.map(function (i) { return '<li class="' + i.level + '"><span class="ico">' + (i.level === "error" ? "✗" : "!") + '</span><span>' + esc(i.msg) + '</span></li>'; }).join("") + '</ul></div>';
+    else h += '<div><h3>التحقق من البنية</h3><ul class="vlist"><li><span class="ico" style="color:var(--ok)">✓</span><span>المعرّف والألوان والخط والأوزان والاستدارة والنسبة كلها صالحة.</span></li></ul></div>';
+    h += '<div><h3>تباين الألوان (WCAG)</h3><p class="note" style="margin-bottom:8px">تُحسب النسب بالألوان الفعلية التي سيطبّقها المتجر (بما فيها الموروثة والتلقائية). العتبات هي نفسها في <code>tools/check-themes.js</code>.</p>' +
+      '<div style="overflow:auto"><table class="ct"><thead><tr><th>العنصر</th><th>عيّنة</th><th>النسبة</th><th>الحدّ</th><th>النتيجة</th></tr></thead><tbody>' +
+      st.au.map(function (r) {
+        var res = r.pass ? '<span class="st ok">✓ ناجح</span>' : r.sev === "fail" ? '<span class="st bad">✗ فشل</span>' : '<span class="st warn">! تنبيه</span>';
+        var fix = "";
+        if (!r.pass && r.fix) {
+          var adj = r.fix.adjust === "fg" ? r.fg : r.bg, fixed = r.fix.adjust === "fg" ? r.bg : r.fg, sg = E.suggest(adj, fixed, r.min);
+          fix = sg ? '<div class="sug"><i style="background:' + sg + '"></i><span>اقتراح لـ <code>' + r.fix.key + '</code>: <b class="ltr">' + sg + '</b></span><button type="button" class="btn sm" data-fix="' + r.fix.key + '" data-val="' + sg + '">تطبيق</button></div>'
+            : '<div class="sug">لا يوجد اقتراح تلقائي — غيّر اللون يدوياً.</div>';
+        }
+        return '<tr><td>' + esc(r.label) + fix + '</td><td><span class="aa" style="color:' + r.fg + ';background:' + r.bg + '" aria-hidden="true">Aa</span></td><td class="ltr">' + r.ratio.toFixed(2) + ':1</td><td class="ltr">≥ ' + r.min + '</td><td>' + res + '</td></tr>';
+      }).join("") + '</tbody></table></div></div>';
+    $("#qualHost").innerHTML = h;
+  }
+  $("#qualHost").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-fix]"); if (!b) return;
+    var k = b.getAttribute("data-fix"), v = b.getAttribute("data-val");
+    S.colors[k] = v; S.ok[k] = v; if (E.OPT_KEYS.indexOf(k) >= 0) S.on[k] = true;
+    buildControls(); refresh(); announce("طُبِّق اللون المقترح " + v + " على " + k);
+  });
+
+  /* ----- تبويب الكود ----- */
+  function hl(src) {
+    var out = "", last = 0, re = /(\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*")|(-?\b\d+(?:\.\d+)?\b)|([A-Za-z_$][\w$]*)(?=\s*:)/g, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      var cls = m[1] ? "c" : m[2] ? (/^\s*:/.test(src.slice(re.lastIndex)) ? "k" : "s") : m[3] ? "n" : "k";
+      out += '<span class="' + cls + '">' + esc(m[0]) + '</span>'; last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  var codeNow = { text: "", file: "" };
+  function renderCode() {
+    var st = state, errs = st.issues.filter(function (i) { return i.level === "error"; }), fails = st.au.filter(function (r) { return !r.pass && r.sev === "fail"; });
+    var id = S.id || "my-theme", ok = !errs.length;
+    var text = E.code(st.T, id, codePos);
+    codeNow = { text: text, id: id, ok: ok };
+    var h = '';
+    if (!ok) h += '<div class="status bad"><span aria-hidden="true">✗</span><div>الكود غير جاهز للنسخ<small>' + errs.map(function (i) { return esc(i.msg); }).join("<br>") + '</small></div></div>';
+    else if (fails.length) h += '<div class="warnbox">يمكنك نسخ الكود، لكن فيه ' + fails.length + ' فشل تباين: سيُظهر <code>node tools/check-themes.js ' + esc(id) + '</code> عيوباً (✗) حتى تعالجها من تبويب «الفحص والتباين».</div>';
+    else h += '<div class="status ok"><span aria-hidden="true">✓</span><div>الكود صالح وجاهز للنسخ<small>لم يُحفظ شيء في المشروع بعد — انسخه والصقه في js/themes.js.</small></div></div>';
+    h += '<div class="cb"><div class="cb-h"><b>١) كائن الثيم — يُلصق داخل <span class="ltr">STORE_THEMES</span> في <span class="ltr">js/themes.js</span></b><div class="sp">' +
+      '<label class="note" style="display:flex;gap:6px;align-items:center">موضع اللصق <select id="codePos" class="inp" style="height:30px;width:auto"><option value="after"' + (codePos === "after" ? " selected" : "") + '>بعد آخر ثيم (فاصلة في البداية)</option><option value="before"' + (codePos === "before" ? " selected" : "") + '>قبل ثيم آخر (فاصلة في النهاية)</option></select></label>' +
+      '<button type="button" class="btn sm brand" data-c="obj"' + (ok ? '' : ' disabled') + '>نسخ الكود</button><button type="button" class="btn sm" data-c="dl"' + (ok ? '' : ' disabled') + '>تنزيل ‎.js</button></div></div>' +
+      '<pre class="code" id="pre-obj" tabindex="0" aria-label="كود الثيم">' + hl(text) + '</pre><div style="padding:6px 12px"><span class="copied-msg" id="msg-obj" role="status"></span></div></div>' +
+      '<div class="cb"><div class="cb-h"><b>٢) سطر التفعيل — داخل <span class="ltr">theme</span> في <span class="ltr">js/config.js</span></b><div class="sp"><button type="button" class="btn sm brand" data-c="preset"' + (ok ? '' : ' disabled') + '>نسخ السطر</button></div></div>' +
+      '<pre class="code" id="pre-preset">' + hl('preset: ' + JSON.stringify(id) + ',') + '</pre><div style="padding:6px 12px"><span class="copied-msg" id="msg-preset" role="status"></span></div></div>' +
+      '<div class="cb"><div class="cb-h"><b>٣) أمر الفحص المعتمد في المشروع</b><div class="sp"><button type="button" class="btn sm" data-c="cmd"' + (ok ? '' : ' disabled') + '>نسخ الأمر</button></div></div>' +
+      '<pre class="code" id="pre-cmd">node tools/check-themes.js ' + esc(id) + '</pre><div style="padding:6px 12px"><span class="copied-msg" id="msg-cmd" role="status"></span></div></div>';
+    h += S.mode === "edit"
+      ? '<p class="note">هذا تعديل لثيم موجود: ابحث في <code>js/themes.js</code> عن كتلة <code class="ltr">"' + esc(S.origin) + '": {</code> واستبدلها كاملةً بالكود أعلاه. لا تُبقِ نسختين بالمفتاح نفسه.</p>'
+      : '<p class="note">الصق الكود داخل الكائن <code>STORE_THEMES</code> (قبل <code class="ltr">};</code> الأخيرة)، ثم شغّل أمر الفحص، ثم غيّر <code>preset</code> في <code>js/config.js</code>. التفاصيل في تبويب «كيفية الاستخدام».</p>';
+    $("#codeHost").innerHTML = h;
+  }
+  $("#codeHost").addEventListener("change", function (e) { if (e.target.id === "codePos") { codePos = e.target.value; renderCode(); } });
+  $("#codeHost").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-c]"); if (!b || b.disabled) return;
+    var c = b.getAttribute("data-c"), id = codeNow.id;
+    if (c === "obj") doCopy(codeNow.text, b, $("#msg-obj"), $("#pre-obj"));
+    else if (c === "preset") doCopy('preset: ' + JSON.stringify(id) + ',', b, $("#msg-preset"), $("#pre-preset"));
+    else if (c === "cmd") doCopy("node tools/check-themes.js " + id, b, $("#msg-cmd"), $("#pre-cmd"));
+    else if (c === "dl") {
+      var body = '/* ثيم "' + id + '" — مقتطف للصق داخل الكائن STORE_THEMES في js/themes.js (ليس ملفاً مستقلاً قابلاً للتشغيل).\n   بعد اللصق: node tools/check-themes.js ' + id + '  ثم  preset: "' + id + '"  في js/config.js */\n' + codeNow.text + '\n';
+      var a = document.createElement("a"), url = URL.createObjectURL(new Blob([body], { type: "text/javascript;charset=utf-8" }));
+      a.href = url; a.download = "theme-" + id + ".js"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+      var m = $("#msg-obj"); m.className = "copied-msg ok"; m.textContent = "بدأ تنزيل theme-" + id + ".js"; announce("بدأ تنزيل الملف");
+    }
+  });
+
+  /* ----- التحديث الشامل ----- */
+  function refresh() { if (raf) return; raf = requestAnimationFrame(function () { raf = 0; doRefresh(); }); }
+  function doRefresh() {
+    var T = E.toThemeSafe(S), R = E.resolve(T), au = E.audit(R), issues = E.validate(S, IDS);
+    state = { T: T, R: R, au: au, issues: issues };
+    syncInherited(R); showFieldErrors(issues);
+    frame.update(R); renderQual(); renderCode();
+    var errs = issues.filter(function (i) { return i.level === "error"; }).length;
+    var fails = au.filter(function (r) { return !r.pass && r.sev === "fail"; }).length, ws = au.filter(function (r) { return !r.pass && r.sev === "warn"; }).length;
+    var pq = $("#pill-q"); pq.className = "pill " + (fails ? "bad" : ws ? "warn" : "ok"); pq.textContent = fails ? "✗" + fails : ws ? "!" + ws : "✓";
+    var pc = $("#pill-c"); pc.className = "pill " + (errs ? "bad" : "ok"); pc.textContent = errs ? "✗" + errs : "✓";
+  }
+  window.addEventListener("beforeunload", function (e) { if (S && isDirty()) { e.preventDefault(); e.returnValue = ""; } });
+
+  /* ---------- التنقل ---------- */
+  var VIEWS = ["gallery", "studio", "help"];
+  function show(v) {
+    if (VIEWS.indexOf(v) < 0) v = "gallery";
+    VIEWS.forEach(function (x) { $("#v-" + x).hidden = x !== v; });
+    $$(".nav button").forEach(function (b) { if (b.getAttribute("data-go") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+    if (location.hash.slice(1) !== v) history.replaceState(null, "", "#" + v);
+    if (v === "studio") requestAnimationFrame(function () { frame.fit(); });
+    window.scrollTo(0, 0);
+  }
+  $$(".nav button").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-go")); }); });
+  window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
+
+  /* ---------- التشغيل الأولي ---------- */
+  frame = new PreviewFrame($("#prevHost"));
+  bindSeg($("#devSeg"), function (w) { frame.setWidth(w); });
+  renderGallery();
+  load(E.stateFromTheme(BLANK, uniqueId("my-theme"), "new"));
+  selectTab("prev");
+  show(location.hash.slice(1) || "gallery");
+})();
+</script>
+</body>
+</html>
