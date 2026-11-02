@@ -1,33 +1,36 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" data-early-fetch>
 <head>
-
-  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>{{storeName}} | {{storeTagline}}</title>
-  <meta name="description" content="{{storeDescription}}">
+  <!-- إعدادات العنوان والوصف الأساسية -->
+  <title>متجرك الإلكتروني | تسوق أفضل المنتجات بسهولة وثقة</title>
+  <meta name="description" content="تصفّح تشكيلة واسعة من المنتجات واطلب مباشرة عبر واتساب بسهولة وسرعة.">
 
+  <!-- وسوم Open Graph المباشرة (Telegram, WhatsApp, Facebook, LinkedIn) -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="{{siteUrl}}/">
+  <meta property="og:site_name" content="متجرك الإلكتروني">
+  <meta property="og:url" content="https://10001-4qn.pages.dev/">
   <meta property="og:locale" content="ar_AR">
-  <meta property="og:site_name" content="{{storeName}}">
-  <meta property="og:title" content="{{storeName}} | {{storeTagline}}">
-  <meta property="og:description" content="{{storeDescription}}">
-  <meta property="og:image" content="{{logoUrl}}">
+  <meta property="og:title" content="متجرك الإلكتروني | تسوق أفضل المنتجات بسهولة وثقة">
+  <meta property="og:description" content="تصفّح تشكيلة واسعة من المنتجات واطلب مباشرة عبر واتساب بسهولة وسرعة.">
+  <meta property="og:image" content="https://10001-4qn.pages.dev/assets/logo/logo.png">
+  <meta property="og:image:secure_url" content="https://10001-4qn.pages.dev/assets/logo/logo.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="شعار المتجر">
 
+  <!-- وسوم Twitter Card (لإظهار البطاقة العريضة الكبيرة) -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="{{storeName}} | {{storeTagline}}">
-  <meta name="twitter:description" content="{{storeDescription}}">
-  <meta name="twitter:image" content="{{logoUrl}}">
-
-
+  <meta name="twitter:url" content="https://10001-4qn.pages.dev/">
+  <meta name="twitter:title" content="متجرك الإلكتروني | تسوق أفضل المنتجات بسهولة وثقة">
+  <meta name="twitter:description" content="تصفّح تشكيلة واسعة من المنتجات واطلب مباشرة عبر واتساب بسهولة وسرعة.">
+  <meta name="twitter:image" content="https://10001-4qn.pages.dev/assets/logo/logo.png">
 
   <link rel="stylesheet" href="css/style.css?v=93">
   <link rel="stylesheet" href="css/refresh.css?v=93">
-
 
   <script type="speculationrules">{"prefetch":[{"where":{"href_matches":"/*"},"eagerness":"moderate"}]}</script>
   <script src="js/config.js?v=93"></script>
@@ -306,7 +309,7 @@
     }
     var items = Store.getIndexItems() || [];
     var out = [];
-    for (var i = 0; i < items.length && out.length < 4; i++) {   // خروج مبكر عند 4 منتجات
+    for (var i = 0; i < items.length && out.length < 4; i++) {
       var p = items[i];
       if (p && p[field] && Store.isProductAvailable(p)) out.push(p);
     }
@@ -340,7 +343,6 @@
       paintSectionIfChanged(sec, cached, false);
     }
 
-    // الاعتماد على الفهرس المحلي فوراً إذا كان موجوداً لمنع أي استعلامات سيرفر إضافية
     if (typeof Store.hasIndexLocal === "function" && Store.hasIndexLocal()) {
       var idxList = getSectionFromIndex(sec.field);
       if (idxList && idxList.length) {
