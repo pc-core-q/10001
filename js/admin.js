@@ -9,6 +9,7 @@
    5) مطابقة الاسم التجاري الأساسي وإضافة الكميات الجديدة للرصيد الحالي تلقائياً (+).
    6) المطابقة والإنشاء السريع للأقسام المفقودة في المعاينة (Auto-Category Match & Create).
    7) شاشة انتظار محايدة ومتوافقة كلياً مع نظام التصميم ومتغيرات الثيمات (CSS Variables).
+   8) دعم كامل لأوامر التسعير الذكي المستهدفة للباركود وتحديد السعر المباشر.
    ========================================================================== */
 
 let editingProductId = null;
@@ -55,16 +56,12 @@ function isTransparentOrInvalidColor(name) {
   return false;
 }
 
-// تنقية اسم اللون من الأوصاف الهامشية (مثل: "أزرق فاتح مائي شفاف" -> "أزرق فاتح")
-// Firebase يرفض أي مفتاح يحوي . $ # [ ] / — واسم اللون/المقاس يصير مفتاحاً داخل inventory («لون||مقاس») فيفشل حفظ **الدفعة كلها**.
-// نستبدل الرمز بما يشبهه (النقطة العشرية ← «٫»، والباقي ← «-») في مصدر واحد تستعمله كل المسارات.
 function safeVariantName(v) {
   return String(v == null ? "" : v)
     .replace(/\./g, "٫").replace(/[$#\[\]\/|]/g, "-").replace(/[\u0000-\u001f\u007f]/g, "")
     .replace(/\s+/g, " ").trim();
 }
 
-// سبب فشل حفظ المنتجات بنص عربي مفهوم (من Store.getLastWriteError)
 function writeFailureMessage(prefix) {
   const e = (typeof Store !== "undefined" && Store.getLastWriteError) ? Store.getLastWriteError() : null;
   const reasons = {
@@ -80,7 +77,6 @@ function writeFailureMessage(prefix) {
 
 function cleanColorName(colorName) {
   if (!colorName) return "";
-  // ⚠️ \b في JavaScript يعمل مع الحروف اللاتينية فقط فلا يطابق الكلمات العربية؛ لذلك نستعمل حدوداً صريحة (مسافة/فاصل/بداية/نهاية).
   let cleaned = (" " + colorName + " ")
     .replace(/(?<=[\s\-_/،,])(عديم اللون|عديمة اللون|شفافة|شفافه|شفاف|مائية|مائيه|مائي|clear|transparent)(?=[\s\-_/،,])/gi, " ")
     .replace(/[\s\-_/]+/g, " ")
@@ -88,16 +84,12 @@ function cleanColorName(colorName) {
   return safeVariantName(cleaned || colorName.trim());
 }
 
-// كلمة لاتينية تُطابق ككلمة كاملة (حتى لا تُطابق red داخل Colored أو lime داخل Sublime)؛ العربية بالاحتواء.
 function colorKeywordMatches(clean, keyword) {
   const k = String(keyword).toLowerCase();
   if (/^[a-z][a-z \-]*$/.test(k)) return new RegExp("(^|[^a-z])" + k.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&") + "($|[^a-z])").test(clean);
   return clean.includes(k);
 }
 
-// دالة فحص اللون واستخراج الدرجة المناسبة بدقة
-// الترتيب: كود صريح ← قاموس الأسماء (إنجليزي/عربي/تسويقي: Obsidian، Porcelain، Titanium Gray…) ← جدول COLOR_PALETTE ← رمادي محايد.
-// (القديم كان يرجع الأزرق لأي اسم غير معروف فتظهر كل الألوان زرقاء في المتجر.)
 function getColorHex(colorName) {
   if (!colorName) return "#9ca3af";
   const ai = (typeof window !== "undefined") ? window.StoreAI : null;
@@ -113,10 +105,9 @@ function getColorHex(colorName) {
     }
   }
 
-  return "#9ca3af"; // لون غير معروف: رمادي محايد (وليس أزرق مضلِّلاً) — يعدّله المدير من منتقي اللون
+  return "#9ca3af";
 }
 
-// ألوان مخزَّنة باسم كود (E07A5F) من استيراد سابق/إدخال يدوي: تتحول لاسم عربي ودرجتها الفعلية، وتُعاد تسمية مفاتيح المخزون معها
 function repairHexColorNames(colors, inventory) {
   const ai = (typeof window !== "undefined") ? window.StoreAI : null;
   const inv = Object.assign({}, inventory || {});
@@ -134,7 +125,6 @@ function repairHexColorNames(colors, inventory) {
   return { colors: out, inventory: inv };
 }
 
-// دالة توحيد الحروف للمطابقة الذكية النظيفة
 function cleanNameForMatch(str) {
   if (!str) return "";
   return String(str)
@@ -146,7 +136,6 @@ function cleanNameForMatch(str) {
     .replace(/[\s\-_/]+/g, " ");
 }
 
-// مسار القسم «الأب › الفرعي» (يميّز قسمين بنفس الاسم تحت أبوين مختلفين) — يُرسَل للذكاء الاصطناعي ويُطابَق به
 function categoryPath(c, categories) {
   const parent = c && c.parentId ? (categories || []).find(x => x.id === c.parentId) : null;
   return parent ? parent.name + " › " + c.name : c.name;
@@ -156,8 +145,6 @@ function categoryLabels() {
   return cats.map(c => categoryPath(c, cats));
 }
 
-// مطابقة قسم مقترح (اسم أو مسار «أب › فرعي») مع أقسام المتجر: تطابق تام أولاً (وبالأب إن ذُكر)، ثم جزئي **وحيد** فقط.
-// التكرار (نفس الاسم تحت أكثر من أب بلا ذكر الأب) = التباس ← null (لا تخمين).
 function matchCategory(name, categories) {
   const parts = String(name || "").split(/[›»>]/).map(x => x.trim()).filter(Boolean);
   if (!parts.length) return null;
@@ -169,7 +156,7 @@ function matchCategory(name, categories) {
     return { c, k: cleanNameForMatch(c.name), pk: par ? cleanNameForMatch(par.name) : "" };
   }).filter(x => x.k);
   let exact = list.filter(x => x.k === leaf && (!parentKey || x.pk === parentKey));
-  if (!exact.length && parentKey) exact = list.filter(x => x.k === leaf);   // الأب المذكور لا يطابق ← نكتفي بالاسم
+  if (!exact.length && parentKey) exact = list.filter(x => x.k === leaf);
   if (exact.length === 1) return exact[0].c;
   if (exact.length > 1) return null;
   if (leaf.length < 3) return null;
@@ -221,10 +208,10 @@ function refreshAllBatchCategorySelects(targetCard = null, selectId = null) {
 }
 
 /* ---------------------------------------------------------------------- */
-/* شاشة التحميل المتوافقة مع دليل التصميم ونظام الثيمات                   */
+/* شاشة التحميل المتوافقة مع دليل التصميم                                  */
 /* ---------------------------------------------------------------------- */
 let _processLoaderTimer = null;
-let _processLoaderShowTimer = null;   // مؤقت إظهار الطبقة: يُلغى عند الإخفاء كي لا تعود الطبقة بعد hide مباشرة وتبتلع النقرات
+let _processLoaderShowTimer = null;
 
 function showProcessLoader(title = "جارٍ معالجة البيانات...", customSteps = []) {
   let overlay = document.getElementById("processLoadingOverlay");
@@ -376,9 +363,6 @@ function hideProcessLoader() {
   }
 }
 
-/* ---------------------------------------------------------------------- */
-/* دالة مساعدة لرفع رقم نسخة الأقسام والإعلانات والإعدادات لحظياً         */
-/* ---------------------------------------------------------------------- */
 function bumpMetaVersion() {
   try {
     if (typeof firebase !== "undefined" && firebase.database) {
@@ -389,9 +373,6 @@ function bumpMetaVersion() {
   }
 }
 
-/* ---------------------------------------------------------------------- */
-/* مساعدة لتحويل DataURL إلى كائن Blob لرفعه إلى ImgBB                     */
-/* ---------------------------------------------------------------------- */
 function dataURLtoBlob(dataurl) {
   const arr = dataurl.split(',');
   const mime = arr[0].match(/:(.*?);/)[1];
@@ -407,7 +388,6 @@ function dataURLtoBlob(dataurl) {
 /* ---------------------------------------------------------------------- */
 /* بدء تشغيل الصفحة والتهيئة                                              */
 /* ---------------------------------------------------------------------- */
-// aiEnabled:false في config.js ← إخفاء كل أدوات الذكاء الاصطناعي (تشمل استيراد الإكسل لأنه يعتمد عليها)
 function applyAiAvailability() {
   const cfg = typeof STORE_CONFIG !== "undefined" ? STORE_CONFIG : {};
   if (cfg.aiEnabled !== false) return;
@@ -469,7 +449,6 @@ async function initAdminPage() {
   wireAdModal(); 
   wireSettingsForm();
 
-  // تفعيل الميزات الذكية وإدارات الاستيراد الموحدة
   applyAiAvailability();
   wireExcelSync();
   wireSmartMediaScanner();
@@ -481,9 +460,6 @@ async function initAdminPage() {
   showUpdateNotice();
 }
 
-/* ---------------------------------------------------------------------- */
-/* إشعار "تم تحديث الموقع"                                                */
-/* ---------------------------------------------------------------------- */
 const UPDATE_NOTICE_ID = "2026-10-19";
 const UPDATE_NOTICE_KEY = "ws_admin_update_seen";
 
@@ -651,14 +627,13 @@ async function deleteProductFromAlgolia(productId) {
 /* ---------------------------------------------------------------------- */
 /* 1) ميزة التسعير بالأوامر الطبيعية                                     */
 /* ---------------------------------------------------------------------- */
-/* ---- التراجع عن آخر أمر تسعير ---- */
 const PRICE_UNDO_KEY = "ws_price_undo_v1";
 let _priceUndoMem = null;
 
 function savePriceUndo(summary, rows) {
   const rec = { ts: Date.now(), summary: String(summary || ""), rows: rows || [] };
   _priceUndoMem = rec;
-  try { localStorage.setItem(PRICE_UNDO_KEY, JSON.stringify(rec)); } catch (e) { /* التخزين ممتلئ: تبقى اللقطة في الذاكرة لهذه الجلسة */ }
+  try { localStorage.setItem(PRICE_UNDO_KEY, JSON.stringify(rec)); } catch (e) {}
 }
 function loadPriceUndo() {
   if (_priceUndoMem) return _priceUndoMem;
@@ -672,7 +647,7 @@ function clearPriceUndo() {
   _priceUndoMem = null;
   try { localStorage.removeItem(PRICE_UNDO_KEY); } catch (e) {}
 }
-// يحدّد ما يمكن إرجاعه: المنتج الذي عُدّل سعره يدوياً بعد التسعير لا يُمسّ (حتى لا نمحو تعديلاً لاحقاً)
+
 function planPriceUndo(products, rec) {
   const byId = new Map();
   (products || []).forEach(p => { if (p) byId.set(String(p.id), p); });
@@ -685,6 +660,7 @@ function planPriceUndo(products, rec) {
   });
   return { restore, skipped, missing };
 }
+
 function refreshUndoButton() {
   const btn = document.getElementById("btnUndoPriceCommand");
   if (!btn) return;
@@ -692,6 +668,7 @@ function refreshUndoButton() {
   btn.style.display = rec ? "" : "none";
   if (rec) btn.title = "التراجع عن: " + rec.summary + " (" + rec.rows.length + " منتج، " + new Date(rec.ts).toLocaleString("ar-EG") + ")";
 }
+
 function wirePriceUndo() {
   const btn = document.getElementById("btnUndoPriceCommand");
   if (!btn || btn.dataset.wired) return;
@@ -757,30 +734,58 @@ function wireAiPricing() {
     try {
       const categories = Store.getCategories();
       const categoryNames = categoryLabels();
-      // parsePriceCommand يتحقق من الخطة (إجراء مسموح، قيمة، قسم موجود فعلاً، نطاق سعر) ويرمي خطأ عند أي التباس
       const plan = await window.StoreAI.parsePriceCommand(command, categoryNames);
 
       if (!(await ensureFullCatalogForBulk())) return;
 
-      // القسم المطلوب + أقسامه الفرعية (المنتجات غالباً تتبع القسم الفرعي)
-      let allowedCatIds = null;
-      if (plan.category) {
+      const products = Store.getProducts();
+      let matchedProducts = [];
+
+      // استهداف بالباركود أولاً
+      if (plan.targetType === "barcode" && plan.targetValue) {
+        const bc = String(plan.targetValue).trim();
+        matchedProducts = products.filter(p => {
+          const code = String(p.barcode || p.sku || "").trim();
+          return code === bc || p.id === bc;
+        });
+        if (!matchedProducts.length) {
+          throw new Error("لم يتم العثور على أي منتج يحمل الباركود: " + bc);
+        }
+      } 
+      // استهداف باسم المنتج
+      else if (plan.targetType === "product" && plan.targetValue) {
+        const pName = cleanNameForMatch(plan.targetValue);
+        matchedProducts = products.filter(p => cleanNameForMatch(p.name).includes(pName));
+        if (!matchedProducts.length) {
+          throw new Error("لم يتم العثور على أي منتج يطابق الاسم: " + plan.targetValue);
+        }
+      } 
+      // استهداف بالقسم (مع فروعه)
+      else if (plan.category) {
         const root = categories.find(c => categoryPath(c, categories) === plan.category) || matchCategory(plan.category, categories);
         if (!root) throw new Error("القسم «" + plan.category + "» لم يعد موجوداً. أعد المحاولة.");
-        allowedCatIds = new Set([root.id]);
+        const allowedCatIds = new Set([root.id]);
         let grew = true;
         while (grew) {
           grew = false;
-          categories.forEach(c => { if (c.parentId && allowedCatIds.has(c.parentId) && !allowedCatIds.has(c.id)) { allowedCatIds.add(c.id); grew = true; } });
+          categories.forEach(c => { 
+            if (c.parentId && allowedCatIds.has(c.parentId) && !allowedCatIds.has(c.id)) { 
+              allowedCatIds.add(c.id); 
+              grew = true; 
+            } 
+          });
         }
+        matchedProducts = products.filter(p => allowedCatIds.has(p.categoryId));
+      } 
+      // كل المنتجات
+      else {
+        matchedProducts = products.slice();
       }
 
-      const products = Store.getProducts();
-      const planned = [];   // [{p, price, oldPrice, isOffer}] — حساب فقط، لا تعديل قبل التأكيد
+      const planned = []; // [{p, price, oldPrice, isOffer}]
 
-      products.forEach(p => {
+      matchedProducts.forEach(p => {
         if (!p) return;
-        if (allowedCatIds && !allowedCatIds.has(p.categoryId)) return;
 
         const curPrice = Number(p.price) || 0;
         const curOldPrice = Number(p.oldPrice) || 0;
@@ -789,32 +794,47 @@ function wireAiPricing() {
 
         let price = curPrice, oldPrice = curOldPrice, isOffer = !!p.isOffer, modified = false;
 
-        if (plan.action === "discount_percent") {
+        if (plan.action === "set_price") {
+          price = Math.round(plan.value);
+          if (price < curPrice) {
+            oldPrice = curOldPrice && curOldPrice > curPrice ? curOldPrice : curPrice;
+            isOffer = true;
+          } else {
+            oldPrice = 0;
+            isOffer = false;
+          }
+          modified = price !== curPrice;
+        } else if (plan.action === "discount_percent") {
           if (!oldPrice || oldPrice <= price) oldPrice = price;
           price = Math.round(curPrice * (1 - plan.value / 100));
-          isOffer = true; modified = price !== curPrice;
+          isOffer = true; 
+          modified = price !== curPrice;
         } else if (plan.action === "discount_fixed") {
           if (!oldPrice || oldPrice <= price) oldPrice = price;
           price = Math.max(0, curPrice - plan.value);
-          isOffer = true; modified = price !== curPrice;
+          isOffer = true; 
+          modified = price !== curPrice;
         } else if (plan.action === "increase_percent" || plan.action === "increase_fixed") {
           price = plan.action === "increase_percent" ? Math.round(curPrice * (1 + plan.value / 100)) : curPrice + plan.value;
-          // إن لحق السعر الجديد «السعر القديم» فلا معنى للعرض (يظهر سعر مشطوب أصغر من الجديد)
           if (oldPrice && oldPrice <= price) { oldPrice = 0; isOffer = false; }
           modified = price !== curPrice;
         } else if (plan.action === "reset_discount") {
-          if (oldPrice && oldPrice > curPrice) { price = oldPrice; oldPrice = 0; isOffer = false; modified = true; }
+          if (oldPrice && oldPrice > curPrice) { 
+            price = oldPrice; 
+            oldPrice = 0; 
+            isOffer = false; 
+            modified = true; 
+          }
         }
 
         if (modified) planned.push({ p, price, oldPrice, isOffer });
       });
 
       if (!planned.length) {
-        showToast("لم يتم العثور على منتجات مطابقة لتطبيق هذا الأمر", "error");
+        showToast("لم تتغير أسعار أي منتجات مطابقة لهذا الأمر (قد تكون بنفس السعر بالفعل)", "error");
         return;
       }
 
-      // المعاينة: الخلاصة مبنية من الخطة المتحقق منها + العدد الحقيقي + مثال فعلي
       const ex = planned[0];
       const fmt = n => Number(n).toLocaleString("en-US");
       const confirmMsg = "سيتم تطبيق:\n" + plan.summary + "\n\nعدد المنتجات المتأثرة: " + planned.length + " من " + products.length +
@@ -823,7 +843,7 @@ function wireAiPricing() {
       if (!confirm(confirmMsg)) return;
 
       const touchedProducts = [];
-      const undoRows = [];   // لقطة قبل/بعد لزر «تراجع»
+      const undoRows = [];
       planned.forEach(x => {
         undoRows.push({
           id: x.p.id,
@@ -835,7 +855,6 @@ function wireAiPricing() {
         x.p.isOffer = x.isOffer;
         touchedProducts.push(x.p);
       });
-      const affectedCount = touchedProducts.length;
 
       const saved = await Store.saveProducts(products);
       if (saved === false) {
@@ -848,7 +867,7 @@ function wireAiPricing() {
       await syncProductsToAlgolia(touchedProducts);
       renderProductsTable();
       renderStats();
-      showToast(`تم بنجاح تحديث أسعار ${affectedCount} منتج ✨ (يمكنك التراجع بزر ↩️)`, "success");
+      showToast(`تم بنجاح تحديث أسعار ${touchedProducts.length} منتج ✨ (يمكنك التراجع بـ ↩️)`, "success");
       input.value = "";
     } catch (err) {
       console.error(err);
@@ -863,7 +882,6 @@ function wireAiPricing() {
 /* ---------------------------------------------------------------------- */
 /* 2) النافذة الموحدة لمعاينة ومراجعة البضائع المستوردة                   */
 /* ---------------------------------------------------------------------- */
-// شارات بطاقة المراجعة: مصدر الوصف (مواصفات رسمية/شرح إعلاني عام)، ثقة البحث والمصادر، اقتراح الاسم الرسمي، وتنبيه توزيع المخزون
 function enrichBadgesHtml(item) {
   const e = item && item.enriched;
   const kind = item && item.descKind;
@@ -921,7 +939,6 @@ function renderBatchReviewCards(items, modalTitle = "مراجعة وتأكيد �
     const initialBarcode = item.barcode || "";
     const initialDesc = item.description || "";
     
-    // تصفية الألوان من الشفاف
     const cleanColorsList = (item.colors || [])
       .map(c => cleanColorName(String(c)))
       .filter(c => c && !isTransparentOrInvalidColor(c));
@@ -943,7 +960,7 @@ function renderBatchReviewCards(items, modalTitle = "مراجعة وتأكيد �
     const card = document.createElement("div");
     card.className = "shelf-item-card";
     card.setAttribute("data-existing-id", existingId);
-    card.setAttribute("data-color-hex", JSON.stringify(item.colorHex || {}));   // درجة كل لون جاء ككود في الملف
+    card.setAttribute("data-color-hex", JSON.stringify(item.colorHex || {}));
     card.style.cssText = "background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px;";
 
     const cleanSuggestedCat = cleanNameForMatch(item.category);
@@ -960,7 +977,6 @@ function renderBatchReviewCards(items, modalTitle = "مراجعة وتأكيد �
         ${displayImg}
       </div>
 
-      <!-- أدوات التعامل مع الصورة -->
       <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
         <a href="${searchGoogleUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm btn-google-search" style="flex:1; text-align:center; padding:4px 6px; font-size:11px; text-decoration:none; background:#fff;" title="البحث في صور Google">
           🔍 صور Google
@@ -976,7 +992,6 @@ function renderBatchReviewCards(items, modalTitle = "مراجعة وتأكيد �
 
       <input type="text" class="shelf-item-name" value="${escapeHtml(initialName)}" placeholder="اسم المنتج الأساسي" style="padding:6px 8px; border:1px solid var(--line-strong); border-radius:6px; font-size:0.85rem; font-weight:600;">
       
-      <!-- اختيار أو إنشاء القسم بسرعة -->
       <div>
         <div style="display:flex; gap:6px; align-items:center;">
           <select class="shelf-item-category" style="flex:1; padding:6px 8px; border:1px solid var(--line-strong); border-radius:6px; font-size:0.85rem; font-family:inherit; background:var(--surface); color:var(--text);">
@@ -998,7 +1013,6 @@ function renderBatchReviewCards(items, modalTitle = "مراجعة وتأكيد �
 
       <textarea class="shelf-item-desc" placeholder="وصف المنتج ومميزاته ومواصفاته..." rows="2" style="width:100%; padding:6px 8px; border:1px solid var(--line-strong); border-radius:6px; font-size:0.8rem; resize:vertical; font-family:inherit;">${escapeHtml(initialDesc)}</textarea>
 
-      <!-- حقول الألوان والمقاسات التلقائية -->
       <div style="display:flex; gap:6px;">
         <div style="flex:1;">
           <label style="font-size:0.75rem; color:var(--ink-400); display:block; margin-bottom:2px;">الألوان (اختياري)</label>
@@ -1096,15 +1110,13 @@ function renderBatchReviewCards(items, modalTitle = "مراجعة وتأكيد �
       }
     });
 
-    // رفع فوري عند اختيار الصورة (فكرة النسخة الأخرى): الصورة تُرفع إلى ImgBB ← ImageKit فوراً ويُكتب الرابط في البطاقة،
-    // فيكون خطوة «حفظ» سريعة ويرى المدير فشل أي صورة في بطاقتها. الرفع نفسه عبر uploadToImgBB (تصغير + مهلة + إعادة محاولة).
     card.querySelector(".shelf-card-file").addEventListener("change", async (ev) => {
       const f = ev.target.files[0];
       if (!f) return;
       const box = card.querySelector(".shelf-img-box");
       const checkEl = card.querySelector(".shelf-item-check");
       const originalBoxContent = box.innerHTML;
-      card.dataset.uploading = "1";            // يمنع «حفظ» قبل اكتمال الرفع (وإلا يُحفظ المنتج بلا صورة)
+      card.dataset.uploading = "1";
       box.innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; gap:6px; color:var(--primary);"><div class="process-spinner" style="width:24px; height:24px; border-width:2px;"></div><span style="font-size:11px; font-weight:600;">جارٍ رفع الصورة...</span></div>';
       try {
         const cdnUrl = await uploadToImgBB(f, false);
@@ -1123,7 +1135,6 @@ function renderBatchReviewCards(items, modalTitle = "مراجعة وتأكيد �
 
     card.querySelector(".shelf-item-check").addEventListener("change", updateCounter);
 
-    // تنبيه السعر المشبوه: صفر، أو أصغر من 1000 بالدينار (غالباً 25 تعني 25,000) مع زر ×1000
     (function wirePriceHint() {
       const priceEl = card.querySelector(".shelf-item-price");
       if (!priceEl || !priceEl.parentElement) return;
@@ -1174,12 +1185,8 @@ function renderBatchReviewCards(items, modalTitle = "مراجعة وتأكيد �
 }
 
 /* ---------------------------------------------------------------------- */
-/* معالجة ملفات الإكسل مباشرة عبر الذكاء الاصطناعي مع استخراج الروابط      */
-/* ---------------------------------------------------------------------- */
-/* ---------------------------------------------------------------------- */
 /* حماية من تكرار الاستيراد + قالب إكسل جاهز                              */
 /* ---------------------------------------------------------------------- */
-// رفع الملف نفسه مرتين يضاعف المخزون (الكمية الواردة تُضاف للرصيد) فنسأل المدير. البصمة: الاسم+الحجم+تاريخ التعديل.
 const IMPORT_HIST_KEY = "ws_import_hist_v1";
 let _pendingImportFp = "";
 function readImportHist() { try { return JSON.parse(localStorage.getItem(IMPORT_HIST_KEY) || "{}") || {}; } catch (e) { return {}; } }
@@ -1198,14 +1205,13 @@ function recordImportDone() {
   try {
     const h = readImportHist();
     h[_pendingImportFp] = Date.now();
-    const keys = Object.keys(h).sort((x, y) => h[y] - h[x]).slice(0, 50);   // نحتفظ بآخر 50 فقط
+    const keys = Object.keys(h).sort((x, y) => h[y] - h[x]).slice(0, 50);
     const out = {}; keys.forEach(k => { out[k] = h[k]; });
     localStorage.setItem(IMPORT_HIST_KEY, JSON.stringify(out));
-  } catch (e) { /* التخزين ممتلئ أو معطّل: لا يهم */ }
+  } catch (e) {}
   _pendingImportFp = "";
 }
 
-// قالب إكسل جاهز يعطيه المدير للتاجر: أعمدة واضحة، الباركود نص (لا يتحول إلى 6.29E+12)، وتعليمات في ورقة ثانية
 function downloadImportTemplate() {
   try {
     if (typeof XLSX === "undefined" || !XLSX.utils || typeof XLSX.writeFile !== "function") throw new Error("مكتبة الإكسل غير محمّلة");
@@ -1258,18 +1264,15 @@ async function handleExcelFileWithAI(file) {
     const workbook = XLSX.read(data);
     const storeCategories = categoryLabels();
 
-    // كل الأوراق (كان الكود يقرأ الورقة الأولى فقط فتضيع بقية المنتجات بصمت)
     let all = [];
     let warnings = [];
     let sheetsUsed = 0;
     for (const sheetName of workbook.SheetNames) {
       const sheet = workbook.Sheets[sheetName];
       if (!sheet) continue;
-      // ورقة التعليمات في القالب الجاهز (أو أي ورقة بعمود واحد) ليست منتجات: لا تُرسل للذكاء الاصطناعي
       if (/^\s*(تعليمات|instructions?|help|readme|ملاحظات)\s*$/i.test(sheetName)) continue;
-      try { const rg = XLSX.utils.decode_range(sheet["!ref"] || "A1"); if (rg.e.c - rg.s.c < 1) continue; } catch (e) { /* نتابع */ }
+      try { const rg = XLSX.utils.decode_range(sheet["!ref"] || "A1"); if (rg.e.c - rg.s.c < 1) continue; } catch (e) {}
 
-      // استخراج الروابط التشعبية المضمنة حتى لا تضيع روابط الصور
       Object.keys(sheet).forEach(cellRef => {
         if (cellRef.startsWith("!")) return;
         const cell = sheet[cellRef];
@@ -1284,7 +1287,6 @@ async function handleExcelFileWithAI(file) {
       if (!csvText || !csvText.trim()) continue;
       sheetsUsed++;
 
-      // الجدول الكبير يُقطَّع تلقائياً إلى دفعات داخل StoreAI.scanInvoice
       const result = await window.StoreAI.scanInvoice(csvText, "text/csv", storeCategories);
       all = all.concat(result.items || []);
       const label = workbook.SheetNames.length > 1 ? "[" + sheetName + "] " : "";
@@ -1297,7 +1299,6 @@ async function handleExcelFileWithAI(file) {
       return;
     }
 
-    // توحيد المكرر عبر الأوراق
     const rawItems = window.StoreAI.normalizeItems(all).items;
 
     if (!rawItems.length) {
@@ -1315,10 +1316,9 @@ async function handleExcelFileWithAI(file) {
 }
 
 /* ---------------------------------------------------------------------- */
-/* 3) المعالجة الموحدة للوسائط الذكية (رفع صورة شاملة / رفع ملف مستند)     */
+/* 3) المعالجة الموحدة للوسائط الذكية                                    */
 /* ---------------------------------------------------------------------- */
 function wireSmartMediaScanner() {
-  // زر «قالب إكسل جاهز» يُضاف داخل شريط أدوات الذكاء الاصطناعي (إن وُجد الشريط)
   const _bar = document.querySelector(".ai-toolkit-bar");
   if (_bar && !document.getElementById("btnDownloadImportTemplate")) {
     const sib = _bar.querySelector("button, label, a");
@@ -1360,7 +1360,6 @@ function wireSmartMediaScanner() {
     cancelBtn.addEventListener("click", closeModal);
   }
 
-  // أ) معالجة "رفع صورة" (كاميرا أو معرض)
   if (imgInput && !imgInput.dataset.wired) {
     imgInput.dataset.wired = "1";
     imgInput.addEventListener("change", async (e) => {
@@ -1381,7 +1380,7 @@ function wireSmartMediaScanner() {
       ]);
 
       try {
-        const prepared = await window.StoreAI.prepareImage(file);   // تصغير + JPEG (أسرع وأدق وأقل عرضة لتجاوز الحد)
+        const prepared = await window.StoreAI.prepareImage(file);
         const storeCategories = categoryLabels();
         const result = await window.StoreAI.scanInvoice(prepared.base64, prepared.mimeType, storeCategories);
         const rawItems = result.items || [];
@@ -1403,7 +1402,6 @@ function wireSmartMediaScanner() {
     });
   }
 
-  // ب) معالجة "رفع ملف" (فواتير PDF مباشرة أو ملفات Excel)
   if (fileInput && !fileInput.dataset.wired) {
     fileInput.dataset.wired = "1";
     fileInput.addEventListener("change", async (e) => {
@@ -1412,7 +1410,6 @@ function wireSmartMediaScanner() {
 
       const fileName = file.name.toLowerCase();
 
-      // معالجة الإكسل مباشرة عبر الذكاء الاصطناعي
       if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls") || fileName.endsWith(".csv")) {
         try {
           await handleExcelFileWithAI(file);
@@ -1422,7 +1419,6 @@ function wireSmartMediaScanner() {
         return;
       }
 
-      // معالجة ملفات PDF مباشرة
       if (fileName.endsWith(".pdf") || file.type === "application/pdf") {
         if (!window.StoreAI || typeof window.StoreAI.scanInvoice !== "function") {
           showToast("خدمة الذكاء الاصطناعي غير متوفرة", "error");
@@ -1439,7 +1435,7 @@ function wireSmartMediaScanner() {
         ]);
 
         try {
-          const prepared = await window.StoreAI.preparePdf(file);    // يتحقق من الحجم (≤12MB)
+          const prepared = await window.StoreAI.preparePdf(file);
           const storeCategories = categoryLabels();
           const result = await window.StoreAI.scanInvoice(prepared.base64, prepared.mimeType, storeCategories);
           const rawItems = result.items || [];
@@ -1466,10 +1462,9 @@ function wireSmartMediaScanner() {
     });
   }
 
-  // ج) تأكيد وحفظ التحديثات المجمعة
   if (saveBtn && !saveBtn.dataset.wired) {
     saveBtn.dataset.wired = "1";
-    let _batchSaving = false;   // يمنع الضغط المزدوج (كان يُنشئ كل المنتجات مرتين)
+    let _batchSaving = false;
     const _doBatchSave = async () => {
       const container = document.getElementById("shelfDetectedList");
       if (container.querySelector('.shelf-item-card[data-uploading="1"]')) {
@@ -1495,8 +1490,6 @@ function wireSmartMediaScanner() {
         const colorsRaw = card.querySelector(".shelf-item-colors")?.value.trim() || "";
         const sizesRaw = card.querySelector(".shelf-item-sizes")?.value.trim() || "";
         
-        // استبعاد أي لون شفاف أو قوام مائي تلقائياً عند الحفظ
-        // الألوان: كود مكتوب في الخانة (E07A5F) ← اسم عربي + درجته؛ وألوان الملف تحمل درجتها في data-color-hex
         let hexMapCard = {};
         try { hexMapCard = JSON.parse(card.getAttribute("data-color-hex") || "{}") || {}; } catch (e) { hexMapCard = {}; }
         const rawColors = [], colorHexMap = {}, usedColorNames = new Set();
@@ -1539,8 +1532,6 @@ function wireSmartMediaScanner() {
         const touchedProducts = [];
         let allProducts = Store.getProducts();
 
-        // نفس مسار صورة المنتج المفرد: ملف ← ImgBB ← رابط ImageKit يُكتب في Firebase (uploadToImgBB).
-        // الروابط الخارجية http(s) تُحفظ كما هي. الرفع متوازٍ (3 معاً) مع عدّاد تقدّم ظاهر.
         const uploadJobs = toProcess.filter(it => it.imgUrl && it.imgUrl.startsWith("data:"));
         if (uploadJobs.length) {
           let doneUploads = 0, cursor = 0;
@@ -1552,7 +1543,6 @@ function wireSmartMediaScanner() {
               try {
                 job.imgUrl = await uploadToImgBB(dataURLtoBlob(job.imgUrl), false);
               } catch (e) {
-                // لا نحفظ base64 داخل Firebase؛ المنتج يُحفظ بلا صورة وتُعرض رسالة بالعدد
                 console.warn("ImgBB upload failed, image skipped:", e);
                 job.imgUrl = "";
                 imgFailed++;
@@ -1586,8 +1576,6 @@ function wireSmartMediaScanner() {
             const rowKeys = cleanColors.length ? cleanColors.map(c => c.name) : [null];
             const colKeys = cleanSizes.length ? cleanSizes : [null];
             const totalCombos = rowKeys.length * colKeys.length;
-            // نوزّع الكمية كما هي بالضبط (المجموع = الكمية الواردة). القديم كان يرفع كل توليفة إلى 1 على الأقل
-            // فتصير الكمية 10 لمنتج وارد منه 5 فقط (5 ألوان × 2 مقاس).
             const baseQty = Math.floor(item.stock / totalCombos);
             let remainder = item.stock - baseQty * totalCombos;
 
@@ -1625,7 +1613,6 @@ function wireSmartMediaScanner() {
             if (mergedColors.length) existingProduct.colors = mergedColors;
             if (mergedSizes.length) existingProduct.sizes = mergedSizes;
 
-            // جمع الكمية الواردة إلى الرصيد الحالي للمنتج (+)
             const incomingQty = Number(item.stock) || 0;
             const currentTotalStock = Number(existingProduct.stock) || 0;
 
@@ -1685,7 +1672,6 @@ function wireSmartMediaScanner() {
           return;
         }
         if (savedOk === false) {
-          // كان الكود يعلن النجاح حتى لو رفض الخادم الكتابة
           hideProcessLoader();
           showToast(writeFailureMessage("تعذّر حفظ المنتجات على الخادم، لم يُحفظ شيء."), "error");
           return;
@@ -1713,8 +1699,6 @@ function wireSmartMediaScanner() {
   }
 }
 
-// دالة توحيد المطابقة وفتح شاشة المراجعة (مع تنقية وتثبيت روابط الصور ومطابقة الأقسام)
-// المنتج الموجود في المتجر المطابق لسطر مستورد: بالباركود أولاً ثم بالاسم بعد التوحيد
 function findExistingFor(item, existingProducts) {
   const cleanItemName = cleanNameForMatch(item.name);
   return (existingProducts || []).find(p => {
@@ -1723,15 +1707,12 @@ function findExistingFor(item, existingProducts) {
   });
 }
 
-// بعد الاستخراج: (1) بحث Google عن المواصفات الرسمية والألوان والمقاسات والقسم (aiEnrich)، (2) شرح إعلاني لكل منتج بقي بلا وصف.
-// أي فشل هنا لا يوقف الاستيراد: تُفتح المراجعة مع تحذير. لا بحث عن صور ولا تعديل لمنتجات المتجر الموجودة.
 async function enrichAndOpen(rawItems, modalTitle, warnings) {
   const warn = Array.isArray(warnings) ? warnings.slice() : [];
   const cfg = typeof STORE_CONFIG !== "undefined" ? STORE_CONFIG : {};
   let items = rawItems;
   if (cfg.aiEnabled !== false && window.StoreAI) {
     const existing = Store.getAdminProducts();
-    // لا نكتب/نبحث لسطر عنده وصف من الملف، ولا لمنتج موجود في المتجر بوصف (حتى لا نبدّل وصفاً كتبه المدير)
     const hasDesc = it => { const ex = findExistingFor(it, existing); return !!(it.description || (ex && ex.description)); };
     if (cfg.aiEnrich !== false && typeof window.StoreAI.enrichItems === "function") {
       try {
@@ -1739,11 +1720,11 @@ async function enrichAndOpen(rawItems, modalTitle, warnings) {
         const budgetSec = Math.max(5, Math.min(120, Number(cfg.aiEnrichBudgetSec) || 20));
         const res = await window.StoreAI.enrichItems(items, categoryLabels(), {
           skip: hasDesc,
-          budgetMs: budgetSec * 1000,   // سقف زمني للبحث كله: ما لم يكتمل يُترك ويُكتب له شرح إعلاني
+          budgetMs: budgetSec * 1000,
           onProgress: (d, t) => showProcessLoader("جارٍ البحث عن المواصفات الرسمية 🔎", ["جارٍ البحث عن المنتجات: " + d + " من " + t + " (حتى " + budgetSec + " ثانية)"])
         });
         items = res.items;
-        (res.warnings || []).forEach(w => console.warn("[إثراء]", w));   // لا تُعرض للمدير: كل بطاقة تحمل شارتها (لم يُعثر/ثقة)
+        (res.warnings || []).forEach(w => console.warn("[إثراء]", w));
       } catch (e) {
         console.warn("[إثراء] تعذّر البحث عن المواصفات الرسمية:", e);
       }
@@ -1781,13 +1762,11 @@ function processAndOpenBatchReview(rawItems, modalTitle, warnings) {
     const existingColors = existing && existing.colors ? existing.colors.map(c => c.name) : [];
     const existingSizes = existing && existing.sizes ? existing.sizes : [];
 
-    // تنقية الألوان واستبعاد الأوصاف الشفافة أو المائية
     const rawColorsList = (item.colors && item.colors.length) ? item.colors : existingColors;
     const filteredColors = (rawColorsList || [])
       .map(c => cleanColorName(String(c)))
       .filter(c => c && !isTransparentOrInvalidColor(c));
 
-    // تنقية وتثبيت رابط الصورة
     let cleanImageUrl = (item.image || "").trim();
     if (cleanImageUrl) {
       const urlMatch = cleanImageUrl.match(/https?:\/\/[^\s"'<>]+/);
@@ -1799,7 +1778,7 @@ function processAndOpenBatchReview(rawItems, modalTitle, warnings) {
 
     return {
       name: item.name,
-      category: String(item.category || "").split("›").pop().trim(),   // اسم الفرعي فقط إن لم يُطابق (لا ننشئ قسماً اسمه «أب › فرعي»)
+      category: String(item.category || "").split("›").pop().trim(),
       categoryId: matchedCatId,
       price: item.price || (existing ? existing.price : 0),
       stock: Number.isFinite(Number(item.qty)) ? Number(item.qty) : 1,
@@ -1820,7 +1799,6 @@ function processAndOpenBatchReview(rawItems, modalTitle, warnings) {
   renderBatchReviewCards(mappedItems, modalTitle);
   const warnList = Array.isArray(warnings) ? warnings.filter(Boolean) : [];
   if (warnList.length) {
-    // التحذيرات تبقى ظاهرة في رأس نافذة المراجعة (لا تختفي مع التوست) كي لا يحفظ المدير ناقصاً دون أن يعلم
     const statusText = document.getElementById("shelfScanStatus");
     if (statusText) statusText.textContent += " — ⚠️ " + warnList.join(" • ");
     showToast(`تم استخراج ${mappedItems.length} صنف، لكن: ${warnList[0]}${warnList.length > 1 ? " (+" + (warnList.length - 1) + " تنبيه)" : ""}`, "error");
@@ -1829,9 +1807,6 @@ function processAndOpenBatchReview(rawItems, modalTitle, warnings) {
   }
 }
 
-/* ---------------------------------------------------------------------- */
-/* 4) ربط زر استيراد الإكسل المباشر ليعمل بنفس دقة الذكاء الاصطناعي        */
-/* ---------------------------------------------------------------------- */
 function wireExcelSync() {
   const fileInput = document.getElementById("excelSyncInput");
   if (!fileInput || fileInput.dataset.wired) return;
@@ -1849,18 +1824,13 @@ function wireExcelSync() {
   });
 }
 
-/* ---------------------------------------------------------------------- */
-/* رفع ومعالجة الصور عبر ImgBB و ImageKit CDN                             */
-/* ---------------------------------------------------------------------- */
-// تصغير الصورة قبل الرفع: صور الهاتف 5–12MB كانت تُرفض (>4MB) أو تبقى ترفع دقائق على شبكة الجوال.
-// الضلع الأطول ≤ 1600px (البانر 2000) وJPEG 0.85؛ ImageKit يحوّلها لاحقاً إلى WebP.
 async function compressImageForUpload(file, maxSide) {
   try {
     if (!file || !/^image\/(jpeg|png|webp)$/i.test(file.type || "")) return file;
     const url = URL.createObjectURL(file);
     const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("decode")); i.src = url; }).finally(() => URL.revokeObjectURL(url));
     const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
-    if (scale === 1 && file.size <= 700 * 1024) return file;       // صغيرة أصلاً
+    if (scale === 1 && file.size <= 700 * 1024) return file;
     const w = Math.max(1, Math.round(img.naturalWidth * scale)), h = Math.max(1, Math.round(img.naturalHeight * scale));
     const canvas = document.createElement("canvas");
     canvas.width = w; canvas.height = h;
@@ -1870,7 +1840,7 @@ async function compressImageForUpload(file, maxSide) {
     const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.85));
     return blob && blob.size < file.size ? blob : file;
   } catch (e) {
-    return file;                                                    // فشل التصغير ← نرفع الأصل كما كان
+    return file;
   }
 }
 
@@ -1893,7 +1863,6 @@ async function uploadToImgBB(file, isBanner = false) {
     throw new Error("لم يتم ضبط مفتاح imgbbApiKey في js/config.js.");
   }
 
-  // مهلة 45 ثانية + محاولة ثانية: بدونها يبقى الرفع معلّقاً إلى الأبد إذا توقف الاتصال (كان شاشة «جارٍ الحفظ» لا تنتهي)
   let data = null, lastErr = null;
   for (let attempt = 0; attempt < 2 && !(data && data.success); attempt++) {
     const ctrl = new AbortController();
@@ -1975,7 +1944,7 @@ function renderStats() {
 }
 
 /* ---------------------------------------------------------------------- */
-/* جدول المنتجات (مع فرز الأحدث أولاً دائماً)                             */
+/* جدول المنتجات                                                         */
 /* ---------------------------------------------------------------------- */
 const ADMIN_PRODUCTS_PAGE_SIZE = 40;
 let adminProductsShown = ADMIN_PRODUCTS_PAGE_SIZE;
@@ -2101,7 +2070,6 @@ function renderProductsTable() {
   let products = Store.getAdminProducts().filter(Boolean);
   if (query) products = products.filter(function (p) { return adminProductMatches(p, query); });
 
-  // فرز المنتجات تنازلياً ليظهر الأحدث إضافتاً أو تعديلاً أولاً دائماً
   products.sort((a, b) => {
     const timeA = Number(a.createdAt || a.updatedAt || 0);
     const timeB = Number(b.createdAt || b.updatedAt || 0);
@@ -2246,7 +2214,6 @@ function renderColorsList() {
     });
   });
 
-  // عند مغادرة الحقل: اسم مكتوب ككود (E07A5F) يتحول لاسم عربي مع درجته (والمخزون يتبع الاسم الجديد)
   list.querySelectorAll(".color-name-input").forEach(function (inp) {
     inp.addEventListener("change", function () {
       const fixed = repairHexColorNames(pendingColors, pendingInventory);
@@ -2550,7 +2517,6 @@ async function saveProductForm(e) {
     return;
   }
 
-  // تنقية الألوان واستبعاد أي لون شفاف أو قوام مائي
   const cleanColors = pendingColors
     .filter(function (c) { 
       return (c.name && c.name.trim() && !isTransparentOrInvalidColor(c.name)) || c.image; 
