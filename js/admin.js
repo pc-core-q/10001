@@ -794,16 +794,12 @@ function wireAiPricing() {
 
         let price = curPrice, oldPrice = curOldPrice, isOffer = !!p.isOffer, modified = false;
 
+        // تعديل السعر المباشر فقط دون إدراج في العروض ودون شطب السعر القديم
         if (plan.action === "set_price") {
           price = Math.round(plan.value);
-          if (price < curPrice) {
-            oldPrice = curOldPrice && curOldPrice > curPrice ? curOldPrice : curPrice;
-            isOffer = true;
-          } else {
-            oldPrice = 0;
-            isOffer = false;
-          }
-          modified = price !== curPrice;
+          oldPrice = 0;
+          isOffer = false;
+          modified = (price !== curPrice) || (p.isOffer === true) || (Number(p.oldPrice) > 0);
         } else if (plan.action === "discount_percent") {
           if (!oldPrice || oldPrice <= price) oldPrice = price;
           price = Math.round(curPrice * (1 - plan.value / 100));
@@ -831,7 +827,7 @@ function wireAiPricing() {
       });
 
       if (!planned.length) {
-        showToast("لم تتغير أسعار أي منتجات مطابقة لهذا الأمر (قد تكون بنفس السعر بالفعل)", "error");
+        showToast("المنتجات مطابقة للسعر المطلوب بالفعل ولم يتغير شيء", "error");
         return;
       }
 
